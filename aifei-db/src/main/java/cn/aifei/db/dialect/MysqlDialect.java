@@ -42,7 +42,7 @@ public class MysqlDialect extends Dialect {
      * 仅 Mysql 覆盖父类 fillStatement，未处理日期类型
      */
     @Override
-    public void fillStatement(PreparedStatement pst, List<Object> paras) throws SQLException {
+    public void fillStatement(PreparedStatement pst, List<?> paras) throws SQLException {
         if (paras != null) {
             for (int i = 0, size = paras.size(); i < size; i++) {
                 pst.setObject(i + 1, paras.get(i));

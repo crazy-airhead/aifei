@@ -104,7 +104,7 @@ public abstract class Dialect {
      * fillStatement 时处理日期类型。除 mysql 以外的数据库需使用本方法
      * 来自：jfinal Dialect.fillStatementHandleDateType(...)
      */
-    public void fillStatement(PreparedStatement pst, List<Object> paras) throws SQLException {
+    public void fillStatement(PreparedStatement pst, List<?> paras) throws SQLException {
         if (paras != null) {
             for (int i = 0, size = paras.size(); i < size; i++) {
                 Object value = paras.get(i);
@@ -241,7 +241,7 @@ public abstract class Dialect {
     /**
      * 支持 where field in (?, ?, ....?) 删除
      */
-    public SqlPara deleteIn(String table, String field, Collection<Object> fieldValues) {
+    public SqlPara deleteIn(String table, String field, Collection<?> fieldValues) {
         StringBuilder sql = new StringBuilder(50 + table.length() + field.length() + fieldValues.size());
         List<Object> paraList = new ArrayList<>(fieldValues.size());
 
@@ -354,7 +354,7 @@ public abstract class Dialect {
     /**
      * 支持 where field in (?, ?, ....?) 查询
      */
-    public SqlPara findIn(String table, String selectedFields, String field, Collection<Object> fieldValues) {
+    public SqlPara findIn(String table, String selectedFields, String field, Collection<?> fieldValues) {
         StringBuilder sql = new StringBuilder(50 + table.length() + field.length() + selectedFields.length() + fieldValues.size());
         List<Object> paraList = new ArrayList<>(fieldValues.size());
 

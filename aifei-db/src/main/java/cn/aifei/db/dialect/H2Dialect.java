@@ -52,7 +52,7 @@ public class H2Dialect extends Dialect {
      * 注意：H2Database 有独立的 fillStatement(...)
      */
     @Override
-    public void fillStatement(PreparedStatement pst, List<Object> paras) throws SQLException {
+    public void fillStatement(PreparedStatement pst, List<?> paras) throws SQLException {
         if (paras != null) {
             for (int i = 0, size = paras.size(); i < size; i++) {
                 Object para = paras.get(i);
