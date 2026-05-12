@@ -1,3 +1,12 @@
+# IDEA
+.idea/
+*.ipr
+*.iml
+*.iws
+
+# vscode
+.vscode/
+
 # Eclipse
 .project
 .classpath
@@ -13,15 +22,7 @@ pom.xml.versionsBackup
 .gradle/
 build/
 
-#IDEA
-# idea ignore
-.idea/
-.claude/
-*.ipr
-*.iml
-*.iws
-
-# temp ignore
+# temp
 *.log
 *.cache
 *.diff
@@ -29,7 +30,11 @@ build/
 *.tmp
 .jython_cache/
 
-# system ignore
+# system
 .DS_Store
 Thumbs.db
+
+# agent
+.codex/
+.claude/
 
