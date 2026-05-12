@@ -330,7 +330,7 @@ public abstract class Dialect {
 
     /**
      * findBy 支持用法:
-     *  1：findBy("name", "james);
+     *  1：findBy("name", "james");
      *  2：findBy("id > ? and age = ?", 5, 18);
      *  3：findBy("age = ? order by id desc", 18);
      *  4：findBy("age = 18 order by id desc");
