@@ -108,8 +108,8 @@ public class Aifei {
      *     即配置项 --debug 等价于 --debug=true
      *
      *  4: 将参数存为系统变量供后续使用，如 PropKit 中获取 aifei.profiles.active 值。
-     *     key = value： 存为 System.setProperty(key, value)
-     *     key 存为：    存为 System.setProperty(key, "true")
+     *     key=value 存为 System.setProperty(key, value)
+     *     key 存为 System.setProperty(key, "true")
      *
      * </pre>
      */
