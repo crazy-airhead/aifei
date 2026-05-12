@@ -175,7 +175,7 @@ public class SqlPara implements Serializable {
     @FunctionalInterface
     public interface KeyGenerator {
         // 约定 sqlId 参数传入 null 时，sqlId 部分不参与生成
-        String generate(String prefix, String sqlId, List<Object> paraList);
+        String generate(String prefix, String sqlId, List<?> paraList);
     }
 
     private static KeyGenerator keyGenerator;
