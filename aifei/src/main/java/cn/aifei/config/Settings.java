@@ -53,8 +53,8 @@ public class Settings<I extends Input, O extends Output> {
      * 配置日志工厂
      * <pre>
      * 例子：
-     *    // 直接使用 log4j2 日志
-     *    settings.setLogFactory(new Log4j2LogFactory());
+     *    // 直接使用 log4j 日志
+     *    settings.setLogFactory(new Log4jLogFactory());
      *
      *    // 使用 slf4j 日志，可接入任意实现了 slf4j 规范的日志系统
      *    settings.setLogFactory(new Slf4jLogFactory());

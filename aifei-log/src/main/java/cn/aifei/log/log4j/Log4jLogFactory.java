@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-package cn.aifei.log.log4j2;
+package cn.aifei.log.log4j;
 
 import cn.aifei.log.Log;
 import cn.aifei.log.LogFactory;
 
 /**
- * Log4j2LogFactory
+ * Log4jLogFactory
  */
-public class Log4j2LogFactory implements LogFactory {
+public class Log4jLogFactory implements LogFactory {
 
     @Override
     public Log getLog() {
-        return new Log4j2Log();
+        return new Log4jLog();
     }
 
     @Override
     public Log getLog(Class<?> clazz) {
-        return new Log4j2Log(clazz);
+        return new Log4jLog(clazz);
     }
 
     @Override
     public Log getLog(String name) {
-        return new Log4j2Log(name);
+        return new Log4jLog(name);
     }
 }

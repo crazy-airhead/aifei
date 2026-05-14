@@ -262,7 +262,7 @@ public class AifeiDb {
     /**
      * 检测日志支持。
      * <p>
-     * aifei db 对日志的依赖只有 aifei-log，需明确引入 aifei-slf4j 或者 aifei-log4j2 依赖并提供相应的配置文件，
+     * aifei db 对日志的依赖只有 aifei-log，需明确引入 aifei-slf4j 或者 aifei-log4j 依赖并提供相应的配置文件，
      * aifei-log 会自动检测配置文件并初始化日志实现。可通过 LogKit.get().setLogFactory(...) 配置指定的日志实现。
      */
     private void checkLogSupport() {

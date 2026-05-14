@@ -100,7 +100,7 @@ public class AppConfig implements AifeiConfig<In, Out> {
         p = PropKit.use("app-config.txt");
 
         // 配置日志
-        settings.setLogFactory(new Log4j2LogFactory());
+        settings.setLogFactory(new Log4jLogFactory());
 
         // 配置 Server、Dispatcher、Handler
         settings.setServer(new UndertowServer(), new IoDispatcher());

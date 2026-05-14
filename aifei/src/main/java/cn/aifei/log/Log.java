@@ -24,8 +24,8 @@ import java.util.function.Supplier;
  * log.debug(() -> "Expensive log: " + doSomething());
  *
  * <pre>
- * aifei-slf4j、aifei-log4j2 实现分别依赖 slf4j 与 log4j2，当 Log 接口
- * 无法满足需求时，可以在项目中直接使用 slf4j 与 log4j2 的 api 来实现功能，
+ * aifei-slf4j、aifei-log4j 实现分别依赖 slf4j 与 log4j，当 Log 接口
+ * 无法满足需求时，可以在项目中直接使用 slf4j 与 log4j 的 api 来实现功能，
  * 例如当需要使用 Marker 机制时。
  *
  * The five logging levels used by Log are (in order):

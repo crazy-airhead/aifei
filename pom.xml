@@ -65,7 +65,7 @@
         <central-publishing-maven-plugin.version>0.10.0</central-publishing-maven-plugin.version>
 
         <slf4j.version>2.0.17</slf4j.version>
-        <log4j2.version>2.26.0</log4j2.version>
+        <log4j.version>2.26.0</log4j.version>
         <fastjson2.version>2.0.62</fastjson2.version>
         <druid.version>1.2.28</druid.version>
         <hikaricp.version>4.0.3</hikaricp.version>
@@ -131,7 +131,7 @@
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-api</artifactId>
-                <version>${log4j2.version}</version>
+                <version>${log4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>

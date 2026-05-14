@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cn.aifei.log.log4j2;
+package cn.aifei.log.log4j;
 
 import cn.aifei.log.Log;
 import org.apache.logging.log4j.Level;
@@ -23,24 +23,24 @@ import org.apache.logging.log4j.spi.ExtendedLogger;
 import java.util.function.Supplier;
 
 /**
- * Log4j2Log
+ * Log4jLog
  */
-public class Log4j2Log implements Log {
+public class Log4jLog implements Log {
 
     private final ExtendedLogger log;
-    private static final String FQCN = Log4j2Log.class.getName();
+    private static final String FQCN = Log4jLog.class.getName();
 
     /**
      * 无参构造仅在 static 属性中使用，避免性能消耗
      */
-    public Log4j2Log() {
+    public Log4jLog() {
         // Class<?> clazz = StackLocatorUtil.getCallerClass(4);
         // StackLocator API（Log4j 2.12+）动态计算深度：
         Class<?> clazz = org.apache.logging.log4j.util.StackLocator.getInstance().getCallerClass(Log.class);
-        this.log = (ExtendedLogger) LogManager.getLogger(clazz != null ? clazz : Log4j2Log.class);
+        this.log = (ExtendedLogger) LogManager.getLogger(clazz != null ? clazz : Log4jLog.class);
     }
 
-    public Log4j2Log(Class<?> clazz) {
+    public Log4jLog(Class<?> clazz) {
         // 引入 log4j-slf4j2-impl 桥接依赖后可能出现类型转换异常，可使用此方案
         // LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         // this.log = ctx.getLogger(clazz.getName());
@@ -48,7 +48,7 @@ public class Log4j2Log implements Log {
         this.log = (ExtendedLogger) LogManager.getLogger(clazz);
     }
 
-    public Log4j2Log(String name) {
+    public Log4jLog(String name) {
         this.log = (ExtendedLogger) LogManager.getLogger(name);
     }
 

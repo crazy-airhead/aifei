@@ -32,7 +32,7 @@ public class LogKit {
     /**
      * 初始化默认日志工厂：
      * 1: 优先初始化 Slf4jLogFactory（pom.xml 引入 slf4j 依赖）
-     * 2: 然后初始化 Log4j2LogFactory（pom.xml 引入 log4j2 依赖）
+     * 2: 然后初始化 Log4jLogFactory（pom.xml 引入 log4j 依赖）
      * 3: 可通过 LogKit.get().setLogFactory(...) 覆盖默认日志工厂
      */
     private static void initDefaultLogFactory() {
@@ -43,7 +43,7 @@ public class LogKit {
         } catch (Exception ignore) {
             try {
                 Class.forName("org.apache.logging.log4j.Logger");
-                logFactory = (LogFactory) Class.forName("cn.aifei.log.log4j2.Log4j2LogFactory").newInstance();
+                logFactory = (LogFactory) Class.forName("cn.aifei.log.log4j.Log4jLogFactory").newInstance();
             } catch (Exception ignored) {
                 logFactory = NoLogFactory.INSTANCE;
             }
