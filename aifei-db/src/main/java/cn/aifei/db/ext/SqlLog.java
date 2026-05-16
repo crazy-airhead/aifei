@@ -19,7 +19,6 @@ package cn.aifei.db.ext;
 import cn.aifei.db.core.SqlPara;
 import cn.aifei.db.core.SqlPrinter;
 import cn.aifei.log.Log;
-import java.util.List;
 
 /**
  * SqlLog 将 sql 打印到日志
@@ -40,26 +39,9 @@ public class SqlLog extends SqlPrinter {
 
     @Override
     public void print(SqlPara sqlPara) {
-        if (!printSql || !log.isInfoEnabled()) {
-            return;
+        if (printSql && log.isInfoEnabled()) {
+            log.info(buildPrintInfo(sqlPara));
         }
-
-        String sql = formatSql ? sqlFormatter.apply(sqlPara.getSql()) : sqlPara.getSql();
-        List<Object> paraList = sqlPara.getPara();
-        int paraCount = paraList != null ? paraList.size() : 0;
-
-        StringBuilder sb = new StringBuilder(sql.length() + paraCount * 16 + 32);
-        sb.append("SQL: ").append(sql).append("\nPARA: [");
-        for (int i = 0; i < paraCount; i++) {
-            if (i > 0) {
-                sb.append(", ");
-            }
-            sb.append(paraList.get(i));
-        }
-        sb.append("]");
-
-        log.info(sb.toString());
     }
 }
-
 
