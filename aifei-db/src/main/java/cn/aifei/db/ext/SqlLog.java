@@ -39,7 +39,7 @@ public class SqlLog extends SqlPrinter {
 
     @Override
     public void print(SqlPara sqlPara) {
-        if (printSql && log.isInfoEnabled()) {
+        if (printSql && sqlPara != null && log.isInfoEnabled()) {
             log.info(buildPrintInfo(sqlPara));
         }
     }
