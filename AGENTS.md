@@ -37,3 +37,4 @@ Pull requests should describe the behavior change, list affected modules, includ
 ## Security & Configuration Tips
 
 Do not commit IDE files, build output, logs, or agent state; `.gitignore` already excludes `.idea/`, `target/`, `.codex/`, and `.claude/`. Keep credentials, signing keys, database URLs, and Central publishing tokens outside the repository.
+
