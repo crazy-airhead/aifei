@@ -34,7 +34,7 @@ import java.nio.file.Path;
  */
 public class Aifei {
 
-    static final String VERSION = "1.0.0";
+    static final String VERSION = "1.0.1";
 
     static Routes routes;
     static Plugins plugins;
@@ -225,6 +225,5 @@ public class Aifei {
         return settings;
     }
 }
-
 
 

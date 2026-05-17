@@ -47,7 +47,7 @@ import static cn.aifei.server.undertow.UndertowConfig.*;
  */
 public class UndertowServer implements Server<HttpServerExchange, Void> {
 
-    static final String version = "1.0.0";
+    static final String version = "1.0.1";
     protected Builder builder;
     protected Undertow undertow;
     protected UndertowConfig config;
@@ -321,7 +321,5 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
         }
     }
 }
-
-
 
 

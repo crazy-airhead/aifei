@@ -220,7 +220,8 @@ public abstract class Argument<I extends Input, O extends Output, T> {
         if (str == null) {
             return null;
         } else {
-            throw new UnsupportedOperationException(getClass().getName()
+            throw new UnsupportedOperationException(
+                    getClass().getName()
                     + " must override Argument.parseDefaultValue(String) to handle @Para(defaultValue = \""
                     + str + "\") conversion."
             );
