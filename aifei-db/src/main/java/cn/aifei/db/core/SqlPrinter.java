@@ -31,7 +31,7 @@ import java.util.function.Function;
  *     // 记录执行耗时，找到 "慢 SQL" 便于优化性能
  *     public class SlowSqlPrinter extends SqlPrinter {
  *         public void print(SqlPara sqlPara) {
- *             long timeSpent = System.currentTimeMillis() - sqlPara.execStartTime;
+ *             long timeSpent = System.currentTimeMillis() - sqlPara.getTimingStartTime();
  *             System.out.println("将 timeSpent 异步写入数据库或缓存，便于找到慢 SQL: " + timeSpent);
  *
  *             // 如果仍需要打印 sql，调用父类 print
@@ -106,11 +106,11 @@ public class SqlPrinter {
     }
 
     /**
-     * 标记 sql 执行开始时间，供 print(...) 输出执行耗时
+     * 开始对当前 sql 执行计时，供 print(...) 输出耗时
      */
-    public void markExecStart(SqlPara sqlPara) {
+    public void startTiming(SqlPara sqlPara) {
         if (printSql && sqlPara != null) {
-            sqlPara.execStartTime = System.currentTimeMillis();
+            sqlPara.timingStartTime = System.currentTimeMillis();
         }
     }
 
@@ -141,8 +141,8 @@ public class SqlPrinter {
         }
         sb.append("]\n");
 
-        if (sqlPara.execStartTime > 0) {
-            long timeSpent = System.currentTimeMillis() - sqlPara.execStartTime;
+        if (sqlPara.timingStartTime > 0) {
+            long timeSpent = System.currentTimeMillis() - sqlPara.timingStartTime;
             sb.append("TIME: ").append(timeSpent).append(" ms\n");
         }
 

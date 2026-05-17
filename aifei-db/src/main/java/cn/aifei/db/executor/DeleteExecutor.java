@@ -38,7 +38,7 @@ public class DeleteExecutor {
         Object toAfterSqlDelete = deleteHook.beforeSqlDelete(dao);
 
         SqlPara sqlPara = dao.sqlPara();
-        sqlPrinter.markExecStart(sqlPara);
+        sqlPrinter.startTiming(sqlPara);
 
         Connection connection = null;
         PreparedStatement preparedStatement = null;

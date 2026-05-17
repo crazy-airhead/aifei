@@ -107,7 +107,7 @@ public class BatchInsertExecutor {
                     count++;
 
                     if (count % batchSize == 0 || count >= rowListSize) {
-                        sqlPrinter.markExecStart(sqlPara);
+                        sqlPrinter.startTiming(sqlPara);
 
                         int[] updateCounts = preparedStatement.executeBatch();
                         if (batch.commitOnBatchSize()) {

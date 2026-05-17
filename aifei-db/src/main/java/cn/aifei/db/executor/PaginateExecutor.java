@@ -79,7 +79,7 @@ public class PaginateExecutor {
         PaginateHook paginateHook = config.getDbHookKit().getPaginateHook();
         Object toAfterQueryTotalRows = paginateHook.beforeQueryTotalRows(dao, hasGroupBy, sqlPara);
 
-        sqlPrinter.markExecStart(sqlPara);
+        sqlPrinter.startTiming(sqlPara);
 
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
@@ -137,7 +137,7 @@ public class PaginateExecutor {
         PaginateHook paginateHook = config.getDbHookKit().getPaginateHook();
         Object toAfterPaginate = paginateHook.beforePaginate(dao, pageNum, pageSize, totalRows, sqlPara);
 
-        sqlPrinter.markExecStart(sqlPara);
+        sqlPrinter.startTiming(sqlPara);
 
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;

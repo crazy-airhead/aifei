@@ -47,7 +47,7 @@ public class QueryExecutor {
         Object toAfterQuery = queryHook.beforeQuery(dao);
 
         SqlPara sqlPara = dao.sqlPara();
-        sqlPrinter.markExecStart(sqlPara);
+        sqlPrinter.startTiming(sqlPara);
 
         Connection connection = null;
         PreparedStatement preparedStatement = null;

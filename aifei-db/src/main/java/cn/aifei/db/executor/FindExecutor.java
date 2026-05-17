@@ -39,7 +39,7 @@ public class FindExecutor {
         Object toAfterFind = findHook.beforeFind(dao);
 
         SqlPara sqlPara = dao.sqlPara();
-        sqlPrinter.markExecStart(sqlPara);
+        sqlPrinter.startTiming(sqlPara);
 
         Connection connection = null;
         PreparedStatement preparedStatement = null;

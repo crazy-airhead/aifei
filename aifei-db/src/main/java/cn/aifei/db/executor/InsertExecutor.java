@@ -41,7 +41,7 @@ public class InsertExecutor {
         Object toAfterRowInsert = insertHook.beforeRowInsert(dao, row);
 
         sqlPara = dao.sqlPara();                    // 取出 hook 中可能修改过的 sqlPara 供后续使用
-        sqlPrinter.markExecStart(sqlPara);
+        sqlPrinter.startTiming(sqlPara);
 
         Connection connection = null;
         PreparedStatement preparedStatement = null;

@@ -83,7 +83,7 @@ public class BatchExecutor {
                 preparedStatement.clearParameters();
 
                 if (count % batchSize == 0 || count >= parasListSize) {
-                    sqlPrinter.markExecStart(sqlPara);
+                    sqlPrinter.startTiming(sqlPara);
 
                     int[] updateCounts = preparedStatement.executeBatch();
                     if (batch.commitOnBatchSize()) {
@@ -162,7 +162,7 @@ public class BatchExecutor {
                 count++;
 
                 if (count % batchSize == 0 || count >= sqlListSize) {
-                    sqlPrinter.markExecStart(sqlPara);
+                    sqlPrinter.startTiming(sqlPara);
 
                     int[] updateCounts = statement.executeBatch();
                     if (batch.commitOnBatchSize()) {

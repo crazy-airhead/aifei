@@ -33,7 +33,7 @@ public class SqlPara implements Serializable {
     List<Object> paraList;
 
     boolean enjoySql = false;
-    transient long execStartTime;
+    transient long timingStartTime;
 
     public SqlPara() {}
 
@@ -122,6 +122,10 @@ public class SqlPara implements Serializable {
         return enjoySql;
     }
 
+    public long getTimingStartTime() {
+        return timingStartTime;
+    }
+
     /**
      * 纯 sql 场景，添加参数到 SqlPara
      */
@@ -135,7 +139,7 @@ public class SqlPara implements Serializable {
         id = null;
         sql = null;
         enjoySql = false;
-        execStartTime = 0;
+        timingStartTime = 0;
         if (paraList != null) {
             paraList.clear();
         }
