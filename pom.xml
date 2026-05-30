@@ -17,6 +17,7 @@
         <module>aifei</module>
         <module>aifei-log</module>
         <module>aifei-json</module>
+        <module>aifei-json-snack4</module>
         <module>aifei-proxy</module>
         <module>aifei-db</module>
         <module>aifei-enjoy</module>
@@ -70,6 +71,7 @@
         <cglib-nodep.version>3.3.0</cglib-nodep.version>
         <javassist.version>3.30.2-GA</javassist.version>
         <undertow-core.version>2.2.39.Final</undertow-core.version>
+        <snack4.version>4.0.50</snack4.version>
     </properties>
 
     <dependencyManagement>
@@ -87,6 +89,11 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>aifei-json</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>aifei-json-snack4</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -147,7 +154,12 @@
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
-                <version>${undertow-core.version}</version>
+                <version>${undertow-core.version</version>
+            </dependency>
+            <dependency>
+                <groupId>org.noear</groupId>
+                <artifactId>snack4</artifactId>
+                <version>${snack4.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
