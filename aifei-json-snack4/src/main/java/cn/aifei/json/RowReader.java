@@ -22,59 +22,59 @@ import java.util.Map;
 
 /**
  * RowReader 用于实现 Map 转换为 aifei-db 的 Row 对象，支持可选的驼峰转下划线。
- *
- * @author airhead
  */
 public class RowReader {
 
-  static final ComputeCache<String, String> KEY_CACHE = new ComputeCache<>(1024);
+	static final ComputeCache<String, String> KEY_CACHE = new ComputeCache<>(1024);
 
-  /** 将 Map 转换为 Row，可选驼峰转下划线。 */
-  @SuppressWarnings("unchecked")
-  public static Row toRow(Object mapObj, boolean camelToSnake) {
-    if (mapObj == null) {
-      return null;
-    }
+	/**
+	 * 将 Map 转换为 Row，可选驼峰转下划线。
+	 */
+	@SuppressWarnings("unchecked")
+	public static Row toRow(Object mapObj, boolean camelToSnake) {
+		if (mapObj == null) {
+			return null;
+		}
 
-    if (mapObj instanceof Row) {
-      return (Row) mapObj;
-    }
+		if (mapObj instanceof Row) {
+			return (Row) mapObj;
+		}
 
-    if (!(mapObj instanceof Map)) {
-      return null;
-    }
+		if (!(mapObj instanceof Map)) {
+			return null;
+		}
 
-    Map<String, Object> map = (Map<String, Object>) mapObj;
-    Row row = new Row();
-    if (camelToSnake) {
-      for (Map.Entry<String, Object> e : map.entrySet()) {
-        String snakeName = KEY_CACHE.computeIfAbsent(e.getKey(), RowReader::camelToSnake);
-        row.setOrPut(snakeName, e.getValue());
-      }
-    } else {
-      map.forEach((k, v) -> row.setOrPut(k, v));
-    }
-    return row;
-  }
+		Map<String, Object> map = (Map<String, Object>) mapObj;
+		Row row = new Row();
+		if (camelToSnake) {
+			for (Map.Entry<String, Object> e : map.entrySet()) {
+				String snakeName = KEY_CACHE.computeIfAbsent(e.getKey(), RowReader::camelToSnake);
+				row.setOrPut(snakeName, e.getValue());
+			}
+		} else {
+			map.forEach((k, v) -> row.setOrPut(k, v));
+		}
+		return row;
+	}
 
-  // 驼峰转下划线风格
-  static String camelToSnake(String fieldName) {
-    if (fieldName == null || fieldName.isEmpty()) {
-      return fieldName;
-    }
+	// 驼峰转下划线风格
+	static String camelToSnake(String fieldName) {
+		if (fieldName == null || fieldName.isEmpty()) {
+			return fieldName;
+		}
 
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0, len = fieldName.length(); i < len; i++) {
-      char c = fieldName.charAt(i);
-      if (Character.isUpperCase(c)) {
-        if (i > 0) {
-          sb.append('_');
-        }
-        sb.append(Character.toLowerCase(c));
-      } else {
-        sb.append(c);
-      }
-    }
-    return sb.toString();
-  }
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0, len = fieldName.length(); i < len; i++) {
+			char c = fieldName.charAt(i);
+			if (Character.isUpperCase(c)) {
+				if (i > 0) {
+					sb.append('_');
+				}
+				sb.append(Character.toLowerCase(c));
+			} else {
+				sb.append(c);
+			}
+		}
+		return sb.toString();
+	}
 }
