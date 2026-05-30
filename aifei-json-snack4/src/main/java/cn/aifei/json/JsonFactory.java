@@ -18,20 +18,18 @@ package cn.aifei.json;
 
 /**
  * JsonFactory
+ *
+ * @author airhead
  */
 public class JsonFactory {
 
-	/**
-	 * 创建 JsonString，用于将 json 字符串转换为 Java 对象
-	 */
-	public JsonString getJsonString(String str) {
-		return new JsonString(str);
-	}
+  /** 创建 JsonString，用于将 json 字符串转换为 Java 对象 */
+  public JsonString getJsonString(String str) {
+    return new JsonString(str);
+  }
 
-	/**
-	 * 创建 JsonObject，用于将 Java 对象转换为 json 字符串
-	 */
-	public JsonObject getJsonObject(Object object) {
-		return new JsonObject(object);
-	}
+  /** 创建 JsonObject，用于将 Java 对象转换为 json 字符串 */
+  public JsonObject getJsonObject(Object object) {
+    return new JsonObject(object);
+  }
 }

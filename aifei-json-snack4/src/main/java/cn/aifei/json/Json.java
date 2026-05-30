@@ -18,23 +18,22 @@ package cn.aifei.json;
 
 /**
  * Json API 入口。
+ *
+ * @author airhead
  */
 public class Json {
 
-	/**
-	 * 创建 JsonString，用于将 json 字符串转换为 Java 对象
-	 */
-	public static JsonString of(String str) {
-		return JsonKit.jsonFactory.getJsonString(str);
-	}
+  /** 创建 JsonString，用于将 json 字符串转换为 Java 对象 */
+  public static JsonString of(String str) {
+    return JsonKit.jsonFactory.getJsonString(str);
+  }
 
-	/**
-	 * 创建 JsonObject，用于将 Java 对象转换为 json 字符串
-	 */
-	public static JsonObject of(Object object) {
-		if (object instanceof String) {
-			throw new IllegalArgumentException("Use Json.of(String) instead of Json.of(Object) for json string input.");
-		}
-		return JsonKit.jsonFactory.getJsonObject(object);
-	}
+  /** 创建 JsonObject，用于将 Java 对象转换为 json 字符串 */
+  public static JsonObject of(Object object) {
+    if (object instanceof String) {
+      throw new IllegalArgumentException(
+          "Use Json.of(String) instead of Json.of(Object) for json string input.");
+    }
+    return JsonKit.jsonFactory.getJsonObject(object);
+  }
 }
