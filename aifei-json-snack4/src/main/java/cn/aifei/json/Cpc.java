@@ -18,44 +18,52 @@ package cn.aifei.json;
 
 /**
  * 跨包调用 Cpc（Cross package call）。
+ *
+ * @author airhead
  */
 public class Cpc {
 
-	public static JsonString getThreadLocalJsonString() {
-		return JsonString.JSON_STRING_LOCAL.get();
-	}
+  public static JsonString getThreadLocalJsonString() {
+    return JsonString.JSON_STRING_LOCAL.get();
+  }
 
-	public static JsonObject getThreadLocalJsonObject() {
-		return JsonObject.JSON_OBJECT_LOCAL.get();
-	}
+  // 用于扩展功能，或者结合 JsonFactory 切换 JsonString 实现
+  public static void setThreadLocalJsonString(JsonString jsonString) {
+    JsonString.JSON_STRING_LOCAL.set(jsonString);
+  }
 
-	public static boolean getCamelToSnake(JsonString jsonString) {
-		return jsonString.camelToSnake != null ? jsonString.camelToSnake : JsonString.defaultCamelToSnake;
-	}
+  public static JsonObject getThreadLocalJsonObject() {
+    return JsonObject.JSON_OBJECT_LOCAL.get();
+  }
 
-	public static boolean getModelAsRow(JsonString jsonString) {
-		return jsonString.modelAsRow != null ? jsonString.modelAsRow : JsonString.defaultModelAsRow;
-	}
+  // 用于扩展功能，或者结合 JsonFactory 切换 JsonObject 实现
+  public static void setThreadLocalJsonObject(JsonObject jsonObject) {
+    JsonObject.JSON_OBJECT_LOCAL.set(jsonObject);
+  }
 
-	public static boolean getSnakeToCamel(JsonObject jsonObject) {
-		return jsonObject.snakeToCamel != null ? jsonObject.snakeToCamel : JsonObject.defaultSnakeToCamel;
-	}
+  public static boolean getCamelToSnake(JsonString jsonString) {
+    return jsonString.camelToSnake != null
+        ? jsonString.camelToSnake
+        : JsonString.defaultCamelToSnake;
+  }
 
-	public static boolean getLowerBeforeCamel(JsonObject jsonObject) {
-		return jsonObject.lowerBeforeCamel != null ? jsonObject.lowerBeforeCamel : JsonObject.defaultLowerBeforeCamel;
-	}
+  public static boolean getModelAsRow(JsonString jsonString) {
+    return jsonString.modelAsRow != null ? jsonString.modelAsRow : JsonString.defaultModelAsRow;
+  }
 
-	public static boolean getModelAsRow(JsonObject jsonObject) {
-		return jsonObject.modelAsRow != null ? jsonObject.modelAsRow : JsonObject.defaultModelAsRow;
-	}
+  public static boolean getSnakeToCamel(JsonObject jsonObject) {
+    return jsonObject.snakeToCamel != null
+        ? jsonObject.snakeToCamel
+        : JsonObject.defaultSnakeToCamel;
+  }
 
-	// 用于扩展功能，或者结合 JsonFactory 切换 JsonString 实现
-	public static void setThreadLocalJsonString(JsonString jsonString) {
-		JsonString.JSON_STRING_LOCAL.set(jsonString);
-	}
+  public static boolean getLowerBeforeCamel(JsonObject jsonObject) {
+    return jsonObject.lowerBeforeCamel != null
+        ? jsonObject.lowerBeforeCamel
+        : JsonObject.defaultLowerBeforeCamel;
+  }
 
-	// 用于扩展功能，或者结合 JsonFactory 切换 JsonObject 实现
-	public static void setThreadLocalJsonObject(JsonObject jsonObject) {
-		JsonObject.JSON_OBJECT_LOCAL.set(jsonObject);
-	}
+  public static boolean getModelAsRow(JsonObject jsonObject) {
+    return jsonObject.modelAsRow != null ? jsonObject.modelAsRow : JsonObject.defaultModelAsRow;
+  }
 }
