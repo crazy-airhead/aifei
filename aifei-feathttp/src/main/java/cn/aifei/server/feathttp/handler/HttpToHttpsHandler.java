@@ -26,78 +26,71 @@ import tech.smartboot.feat.core.common.HttpStatus;
 /**
  * http 请求重定向到 https
  *
- * <p>配置方法： feathttp.http.toHttps = true
+ * 配置方法：
+ * feathttp.http.toHttps = true
  *
- * <p>重定向默认使用状态码 302，可配置状态码： feathttp.http.toHttpsStatusCode=301
- *
- * @author airhead
+ * 重定向默认使用状态码 302，可配置状态码：
+ * feathttp.http.toHttpsStatusCode=301
  */
 public class HttpToHttpsHandler implements HttpHandler {
 
-  protected String httpsPrefix;
-  protected int statusCode;
-  protected FeatHttpConfig config;
+    protected String httpsPrefix;
+    protected int statusCode;
+    protected FeatHttpConfig config;
 
-  public HttpToHttpsHandler(FeatHttpConfig config) {
-    this.config = config;
-    this.statusCode = config.getHttpToHttpsStatusCode();
-  }
-
-  @Override
-  public void handle(HttpRequest request) throws Throwable {
-    HttpResponse response = request.getResponse();
-    String httpsUrl = buildRedirectHttpsUrl(request);
-
-    response.setHttpStatus(statusCode, getStatusText(statusCode));
-    response.setHeader("Location", httpsUrl);
-    response.setHeader("Connection", "close");
-    response.close();
-  }
-
-  protected String buildRedirectHttpsUrl(HttpRequest request) {
-    if (httpsPrefix == null) {
-      buildUrlPrefix();
+    public HttpToHttpsHandler(FeatHttpConfig config) {
+        this.config = config;
+        this.statusCode = config.getHttpToHttpsStatusCode();
     }
 
-    String uri = request.getRequestURI();
-    String queryString = request.getQueryString();
-    if (queryString != null && queryString.length() > 0) {
-      StringBuilder ret =
-          new StringBuilder(httpsPrefix.length() + uri.length() + 1 + queryString.length());
-      ret.append(httpsPrefix).append(uri).append('?').append(queryString);
-      return ret.toString();
-    } else {
-      StringBuilder ret = new StringBuilder(httpsPrefix.length() + uri.length());
-      ret.append(httpsPrefix).append(uri);
-      return ret.toString();
-    }
-  }
+    @Override
+    public void handle(HttpRequest request) throws Throwable {
+        HttpResponse response = request.getResponse();
+        String httpsUrl = buildRedirectHttpsUrl(request);
 
-  protected void buildUrlPrefix() {
-    SslConfig sslConfig = config.getSslConfig();
-    String ret = "https://localhost";
-
-    if (sslConfig.getPort() != 443) {
-      ret = ret + ":" + sslConfig.getPort();
+        response.setHttpStatus(statusCode, getStatusText(statusCode));
+        response.setHeader("Location", httpsUrl);
+        response.setHeader("Connection", "close");
+        response.close();
     }
 
-    this.httpsPrefix = ret;
-  }
+    protected String buildRedirectHttpsUrl(HttpRequest request) {
+        if (httpsPrefix == null) {
+            buildUrlPrefix();
+        }
 
-  private String getStatusText(int code) {
-    switch (code) {
-      case 301:
-        return "Moved Permanently";
-      case 302:
-        return "Found";
-      case 303:
-        return "See Other";
-      case 307:
-        return "Temporary Redirect";
-      case 308:
-        return "Permanent Redirect";
-      default:
-        return "Found";
+        String uri = request.getRequestURI();
+        String queryString = request.getQueryString();
+        if (queryString != null && queryString.length() > 0) {
+            StringBuilder ret = new StringBuilder(httpsPrefix.length() + uri.length() + 1 + queryString.length());
+            ret.append(httpsPrefix).append(uri).append('?').append(queryString);
+            return ret.toString();
+        } else {
+            StringBuilder ret = new StringBuilder(httpsPrefix.length() + uri.length());
+            ret.append(httpsPrefix).append(uri);
+            return ret.toString();
+        }
     }
-  }
+
+    protected void buildUrlPrefix() {
+        SslConfig sslConfig = config.getSslConfig();
+        String ret = "https://localhost";
+
+        if (sslConfig.getPort() != 443) {
+            ret = ret + ":" + sslConfig.getPort();
+        }
+
+        this.httpsPrefix = ret;
+    }
+
+    private String getStatusText(int code) {
+        switch (code) {
+            case 301: return "Moved Permanently";
+            case 302: return "Found";
+            case 303: return "See Other";
+            case 307: return "Temporary Redirect";
+            case 308: return "Permanent Redirect";
+            default: return "Found";
+        }
+    }
 }
