@@ -16,6 +16,7 @@
 
 package cn.aifei.server.feathttp;
 
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,6 +48,17 @@ public class FeatHttpServer implements Server<HttpRequest, Void> {
     protected volatile boolean started = false;
 
     protected FeatHttpHandler featHttpHandler = new FeatHttpHandler();
+
+    static {
+        // 关闭 feat-core 自带的 banner，由 aifei-feathttp 输出启动信息
+        try {
+            Field field = HttpServer.class.getDeclaredField("bannerEnabled");
+            field.setAccessible(true);
+            field.set(null, false);
+        } catch (Exception ignored) {
+            // feat-core 版本变更导致字段不存在时忽略
+        }
+    }
 
     public FeatHttpServer() {
         this.config = new FeatHttpConfig();
