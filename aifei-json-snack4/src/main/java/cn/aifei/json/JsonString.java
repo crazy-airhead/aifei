@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.noear.snack4.ONode;
-import org.noear.snack4.Options;
-import org.noear.snack4.Feature;
-import org.noear.snack4.TypeRef;
+import org.noear.snack4.codec.TypeRef;
 
 /**
  * JsonString 将 json 字符串转换为 Java 对象。
@@ -179,7 +177,8 @@ public class JsonString {
 		}
 	}
 
-	public String toString() {
+	@Override
+  public String toString() {
 		return text;
 	}
 
