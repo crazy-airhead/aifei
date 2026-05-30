@@ -22,6 +22,7 @@
         <module>aifei-db</module>
         <module>aifei-enjoy</module>
         <module>aifei-undertow</module>
+        <module>aifei-feathttp</module>
         <module>aifei-all</module>
     </modules>
 
@@ -71,6 +72,7 @@
         <cglib-nodep.version>3.3.0</cglib-nodep.version>
         <javassist.version>3.30.2-GA</javassist.version>
         <undertow-core.version>2.2.39.Final</undertow-core.version>
+        <feat-core.version>2.1.0</feat-core.version>
         <snack4.version>4.0.50</snack4.version>
     </properties>
 
@@ -117,6 +119,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>aifei-feathttp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
@@ -154,12 +161,17 @@
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
-                <version>${undertow-core.version</version>
+                <version>${undertow-core.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.noear</groupId>
                 <artifactId>snack4</artifactId>
                 <version>${snack4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tech.smartboot.feat</groupId>
+                <artifactId>feat-core</artifactId>
+                <version>${feat-core.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
