@@ -16,8 +16,8 @@
 
 package cn.aifei.server.undertow;
 
-import java.util.List;
-import java.util.function.Consumer;
+import static cn.aifei.server.undertow.UndertowConfig.*;
+
 import cn.aifei.server.Dispatcher;
 import cn.aifei.server.Server;
 import cn.aifei.server.undertow.handler.HttpToHttpsHandler;
@@ -27,10 +27,10 @@ import cn.aifei.server.undertow.util.IpUtil;
 import cn.aifei.util.StrUtil;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
-import io.undertow.predicate.Predicate;
-import io.undertow.predicate.Predicates;
 import io.undertow.UndertowOptions;
 import io.undertow.Version;
+import io.undertow.predicate.Predicate;
+import io.undertow.predicate.Predicates;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
@@ -38,7 +38,8 @@ import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.resource.ResourceManager;
-import static cn.aifei.server.undertow.UndertowConfig.*;
+import java.util.List;
+import java.util.function.Consumer;
 
 /*
  * UndertowServer
@@ -138,6 +139,14 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
         }
     }
 
+    @Override
+    public synchronized void stop() {
+        if (started) {
+            undertow.stop();
+            started = false;
+        }
+    }
+
     protected void printServerUrls() {
         String msg = "Server running at\n";
         msg += " > Local:   http://localhost:" + config.getPort();
@@ -210,53 +219,6 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
         String resourcePath = getSystemProperty("resourcePath", RESOURCE_PATH);
         String ioThreads = getSystemProperty("ioThreads", IO_THREADS);
         String workerThreads = getSystemProperty("workerThreads", WORKER_THREADS);
-
-        if (StrUtil.notBlank(port)) {
-            config.port = Integer.parseInt(port.trim());
-        }
-        if (StrUtil.notBlank(host)) {
-            config.host = host.trim();
-        }
-        if (StrUtil.notBlank(resourcePath)) {
-            config.resourcePath = resourcePath.trim();
-        }
-        if (StrUtil.notBlank(ioThreads)) {
-            config.ioThreads = Integer.parseInt(ioThreads.trim());
-        }
-        if (StrUtil.notBlank(workerThreads)) {
-            config.workerThreads = Integer.parseInt(workerThreads.trim());
-        }
-    }
-
-    // 使用短变量名: port、host、resourcePath、ioThreads、workerThreads
-    // 兼容带 "undertow." 前缀的长变量名，如: undertow.port
-    private String getSystemProperty(String shortName, String longName) {
-        String ret = System.getProperty(shortName);
-        return StrUtil.notBlank(ret) ? ret : System.getProperty(longName);
-    }
-
-    /**
-     * 使用 System.getProperty(...) 加载命令行传入的 undertow.port 与 undertow.host 参数，
-     * 因为这两个参数最有可能在运行项目时进行变动，这个功能可以免去创建 config/undertow-pro.txt
-     * 来配置最需要变动的 port 与 host 参数，进一步节省时间
-     *
-     * 使用示例：
-     *   -D 格式传参：
-     *      java -Dundertow.port=8080 -Dundertow.host=0.0.0.0 -jar jfinal-club-release.jar
-     *
-     *   -- 双减号格式传参：
-     *      java --undertow.port=8080 --undertow.host=0.0.0.0 -jar jfinal-club-release.jar
-     *
-     * 传参注意事项：
-     * 1：传参以 "-D" 或者 "--" 为前缀，并且前缀与后方的参数名之间不能有空格
-     * 2：参数名与参数值中间用等号字符分格，且等号前后不能空格
-     */
-    protected void loadCommandLineParameter() {
-        String port = System.getProperty(PORT);
-        String host = System.getProperty(HOST);
-        String resourcePath = System.getProperty(RESOURCE_PATH);
-        String ioThreads = System.getProperty(IO_THREADS);
-        String workerThreads = System.getProperty(WORKER_THREADS);
 
         if (StrUtil.notBlank(port)) {
             config.port = Integer.parseInt(port.trim());
@@ -365,12 +327,11 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
         }
     }
 
-    @Override
-    public synchronized void stop() {
-        if (started) {
-            undertow.stop();
-            started = false;
-        }
+    // 使用短变量名: port、host、resourcePath、ioThreads、workerThreads
+    // 兼容带 "undertow." 前缀的长变量名，如: undertow.port
+    private String getSystemProperty(String shortName, String longName) {
+        String ret = System.getProperty(shortName);
+        return StrUtil.notBlank(ret) ? ret : System.getProperty(longName);
     }
 }
 
