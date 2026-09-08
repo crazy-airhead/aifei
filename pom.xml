@@ -58,8 +58,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <!-- release 严格按 JDK 17 的 API 签名编译并输出 17 字节码，
+             避免用更高版本 JDK 构建时误用 18+ API 导致运行时才暴露问题 -->
+        <maven.compiler.release>17</maven.compiler.release>
 
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
@@ -203,8 +204,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>${maven.compiler.source}</source>
-                        <target>${maven.compiler.target}</target>
+                        <release>${maven.compiler.release}</release>
                         <encoding>${project.build.sourceEncoding}</encoding>
                         <!-- 保留方法参数名，便于运行时反射读取 -->
                         <parameters>true</parameters>
@@ -234,7 +234,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
-                        <source>${maven.compiler.source}</source>
+                        <source>${maven.compiler.release}</source>
                         <encoding>${project.build.sourceEncoding}</encoding>
                         <show>private</show>
                         <doclint>none</doclint>
