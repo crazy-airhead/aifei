@@ -4,14 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>cn.aifei</groupId>
+    <groupId>io.github.crazy-airhead</groupId>
     <artifactId>aifei-parent</artifactId>
     <version>1.1.0</version>
     <packaging>pom</packaging>
 
     <name>aifei-parent</name>
     <description>Aifei is the world's first AI coding framework</description>
-    <url>https://github.com/jfinal/aifei</url>
+    <url>https://github.com/crazy-airhead/aifei</url>
 
     <modules>
         <module>aifei</module>
@@ -36,6 +36,12 @@
 
     <developers>
         <developer>
+            <id>crazy-airhead</id>
+            <name>CrazyAirhead</name>
+            <email>l4qiang@gmail.com</email>
+            <url>https://github.com/crazy-airhead</url>
+        </developer>
+        <developer>
             <id>aifei</id>
             <name>James</name>
             <email>jfinal@126.com</email>
@@ -44,9 +50,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/jfinal/aifei.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/jfinal/aifei.git</developerConnection>
-        <url>https://github.com/jfinal/aifei</url>
+        <connection>scm:git:https://github.com/crazy-airhead/aifei.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/crazy-airhead/aifei.git</developerConnection>
+        <url>https://github.com/crazy-airhead/aifei</url>
     </scm>
 
     <properties>
