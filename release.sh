@@ -2,7 +2,7 @@
 #
 # release.sh —— aifei 一键发布到 Maven Central（Central Portal 流程）
 #
-# 流程: 前置检查 → JDK 8 构建/签名/上传 → 等待校验(VALIDATED) → 确认 → 发布 → 等待 PUBLISHED
+# 流程: 前置检查 → JDK 17 构建/签名/上传 → 等待校验(VALIDATED) → 确认 → 发布 → 等待 PUBLISHED
 #
 # 用法:
 #   ./release.sh                  交互式完整发布（正式发布前会要求确认）
@@ -95,12 +95,12 @@ wait_state() { # $1=id  $2=目标状态  $3=超时分钟
 
 # ---------------- 前置检查 ----------------
 precheck() {
-    info "检查 JDK 8（aifei-proxy 的 cglib 测试在 JDK 17+ 上会失败）"
-    if /usr/libexec/java_home -v 1.8 >/dev/null 2>&1; then
-        export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+    info "检查 JDK 17+（项目基线为 JDK 17）"
+    if /usr/libexec/java_home -v 17 >/dev/null 2>&1; then
+        export JAVA_HOME=$(/usr/libexec/java_home -v 17)
         info "JAVA_HOME = $JAVA_HOME"
     else
-        die "未找到 JDK 8：/usr/libexec/java_home -v 1.8"
+        die "未找到 JDK 17：/usr/libexec/java_home -v 17"
     fi
 
     info "检查 GPG 签名密钥 $GPG_KEY"

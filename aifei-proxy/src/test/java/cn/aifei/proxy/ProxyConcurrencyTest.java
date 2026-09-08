@@ -19,7 +19,6 @@ package cn.aifei.proxy;
 import cn.aifei.aop.Before;
 import cn.aifei.aop.Interceptor;
 import cn.aifei.aop.Invocation;
-import cn.aifei.proxy.cglib.CglibProxyFactory;
 import cn.aifei.proxy.javassist.JavassistProxyFactory;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,19 +35,6 @@ import static org.junit.Assert.assertTrue;
 public class ProxyConcurrencyTest {
 
     private static final int THREAD_COUNT = 24;
-
-    @Test
-    public void cglibInitializesCallbackAndMethodCacheOnceUnderConcurrency() throws Exception {
-        CglibConcurrentInterceptor.constructorCount.set(0);
-        CglibConcurrentInterceptor.invocationCount.set(0);
-        CglibConcurrentService.targetCount.set(0);
-
-        runConcurrently(new CglibProxyFactory(), CglibConcurrentService.class);
-
-        assertEquals(1, CglibConcurrentInterceptor.constructorCount.get());
-        assertEquals(THREAD_COUNT, CglibConcurrentInterceptor.invocationCount.get());
-        assertEquals(THREAD_COUNT, CglibConcurrentService.targetCount.get());
-    }
 
     @Test
     public void javassistInitializesCallbackAndMethodCacheOnceUnderConcurrency() throws Exception {
@@ -96,32 +82,6 @@ public class ProxyConcurrencyTest {
 
     interface ConcurrentService {
         int work(int value);
-    }
-
-    @Before(CglibConcurrentInterceptor.class)
-    public static class CglibConcurrentService implements ConcurrentService {
-        static final AtomicInteger targetCount = new AtomicInteger();
-
-        @Override
-        public int work(int value) {
-            targetCount.incrementAndGet();
-            return value + 1;
-        }
-    }
-
-    public static class CglibConcurrentInterceptor implements Interceptor {
-        static final AtomicInteger constructorCount = new AtomicInteger();
-        static final AtomicInteger invocationCount = new AtomicInteger();
-
-        public CglibConcurrentInterceptor() {
-            constructorCount.incrementAndGet();
-        }
-
-        @Override
-        public void intercept(Invocation inv) throws Exception {
-            invocationCount.incrementAndGet();
-            inv.invoke();
-        }
     }
 
     @Before(JavassistConcurrentInterceptor.class)

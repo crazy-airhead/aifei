@@ -19,37 +19,20 @@ package cn.aifei.proxy;
 import cn.aifei.aop.Before;
 import cn.aifei.aop.Interceptor;
 import cn.aifei.aop.Invocation;
-import cn.aifei.proxy.cglib.CglibProxyFactory;
 import cn.aifei.proxy.javassist.JavassistProxyFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(Parameterized.class)
 public class ProxyFactoryBehaviorTest {
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> proxyFactories() {
-        return Arrays.asList(new Object[][] {
-                {"cglib", new CglibProxyFactory()},
-                {"javassist", new JavassistProxyFactory()}
-        });
-    }
-
-    private final ProxyFactory factory;
-
-    public ProxyFactoryBehaviorTest(String name, ProxyFactory factory) {
-        this.factory = factory;
-    }
+    private final ProxyFactory factory = new JavassistProxyFactory();
 
     @Test
     public void inheritedMethodCacheIsIsolatedByTargetClass() {

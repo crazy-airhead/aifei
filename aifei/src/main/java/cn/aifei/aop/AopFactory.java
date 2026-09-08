@@ -196,12 +196,15 @@ public class AopFactory {
     }
 
     /**
-     * 字符串包含判断之 "_$$_" 支持 javassist，"$$Enhancer" 支持 cglib
+     * 字符串包含判断之 "_$$_" 支持 javassist，"$$Enhancer" 支持 cglib/guice
      *
-     * 被 cglib、guice 增强过的类需要通过本方法获取到被增强之前的类型
+     * 被字节码工具增强过的类需要通过本方法获取到被增强之前的类型
      * 否则调用其 targetClass.getDeclaredFields() 方法时
-     * 获取到的是一堆 cglib guice 生成类中的 Field 对象
+     * 获取到的是一堆代理生成类中的 Field 对象
      * 而被增强前的原类型中的 Field 反而获取不到
+     *
+     * 注：aifei 自带的代理实现为 javassist，cglib 已移除（不支持 JDK 17+），
+     *     此处保留 "$$Enhancer" 判断用于兼容外部被 cglib/guice 增强过的类
      */
     protected Class<?> getUsefulClass(Class<?> clazz) {
         // com.demo.blog.Blog$$EnhancerByCGLIB$$69a17158
