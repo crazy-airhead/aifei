@@ -19,7 +19,9 @@ package cn.aifei.proxy.javassist;
 import cn.aifei.aop.Interceptor;
 import cn.aifei.aop.InterceptorKit;
 import cn.aifei.aop.Invocation;
+import cn.aifei.util.ComputeCache;
 import javassist.util.proxy.MethodHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,29 +31,65 @@ import java.util.concurrent.ConcurrentHashMap;
 class JavassistCallback implements MethodHandler {
 
     static final InterceptorKit interKit = InterceptorKit.get();
-    static final ConcurrentHashMap<Method, Interceptor[]> cache = new ConcurrentHashMap<>();
+    static final ComputeCache<Class<?>, JavassistCallback> callbackCache = new ComputeCache<>(512);
+
+    final Class<?> targetClass;
+    final ConcurrentHashMap<Method, Interceptor[]> interceptorCache = new ConcurrentHashMap<>();
+
+    private JavassistCallback(Class<?> targetClass) {
+        this.targetClass = targetClass;
+    }
+
+    static JavassistCallback get(Class<?> targetClass) {
+        return callbackCache.computeIfAbsent(targetClass, JavassistCallback::new);
+    }
 
     @Override
-    public Object invoke(Object target, Method method, Method methodProxy, Object[] args) throws Throwable {
-        Interceptor[] inters = cache.get(method);
+    public Object invoke(Object target, Method method, Method methodProxy, Object[] args) throws Exception {
+        Interceptor[] inters = interceptorCache.get(method);
         if (inters == null) {
-            Class<?> targetClass = target.getClass().getSuperclass();
-            inters = interKit.buildServiceMethodInterceptor(targetClass, method);
-            cache.put(method, inters);
+            inters = cacheInterceptors(method);
         }
 
         if (inters.length == 0) {
-            return methodProxy.invoke(target, args);
+            return invokeMethod(methodProxy, target, args);
         }
 
         Invocation invocation = new Invocation(target, method, args, inters, x -> {
-            return methodProxy.invoke(target, x);
+            return invokeMethod(methodProxy, target, x);
         });
         invocation.invoke();
 
         return invocation.getReturnValue();
     }
+
+    private Interceptor[] cacheInterceptors(Method method) {
+        synchronized (interceptorCache) {
+            Interceptor[] inters = interceptorCache.get(method);
+            if (inters == null) {
+                inters = interKit.buildServiceMethodInterceptor(targetClass, method);
+                interceptorCache.put(method, inters);
+            }
+            return inters;
+        }
+    }
+
+    /**
+     * Method.invoke() 会用 InvocationTargetException 包装目标方法异常，
+     * 此处只拆除当前反射调用产生的一层包装。
+     */
+    private Object invokeMethod(Method method, Object target, Object[] args) throws Exception {
+        try {
+            return method.invoke(target, args);
+        } catch (InvocationTargetException e) {
+            Throwable targetException = e.getTargetException();
+            if (targetException instanceof Exception) {
+                throw (Exception) targetException;
+            }
+            if (targetException instanceof Error) {
+                throw (Error) targetException;
+            }
+            throw new RuntimeException(targetException);
+        }
+    }
 }
-
-
-

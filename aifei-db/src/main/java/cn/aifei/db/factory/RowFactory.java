@@ -17,8 +17,8 @@
 package cn.aifei.db.factory;
 
 import cn.aifei.db.core.*;
+import cn.aifei.db.dialect.Dialect;
 import cn.aifei.enjoy.util.InstanceUtil;
-import java.io.InputStream;
 import java.io.Serializable;
 import java.sql.*;
 import java.util.ArrayList;
@@ -29,22 +29,10 @@ import java.util.function.Function;
 /**
  * 从 ResultSet 在获取数据并放入 Row 或者 Row 的子类
  *
- * <p>
- * 如需针对 mybatis 用户使用习惯，避免 JDBC 将 Byte、Short 转成 Integer，
- * 可将继承 RowFactory 并将 if (types[i] < Types.DATE) 代码块改为如下内容：
- *     if (types[i] < Types.DATE) {
- *         if (types[i] == Types.TINYINT) {
- *             value = BuilderKit.getByte(rs, i);
- *         } else if (types[i] == Types.SMALLINT) {
- *             value = BuilderKit.getShort(rs, i);
- *         } else {
- *             value = rs.getObject(i);
- *         }
- *     }
- *
- * <p>
- * 注：可优先尝试 rs.getByte(i) 与 ResultSet.getShort(i) 是否满足需求，
- *      否则使用 jfinal 源码中的 BuilderKit.java 实现 Byte、Short 值获取
+ * <pre>
+ * 字段读取及 LOB 物化规则由 Dialect.readColumnValue(...) 提供，
+ * RowFactory 负责构造 Row。
+ * </pre>
  */
 public class RowFactory implements Serializable {
 
@@ -58,30 +46,12 @@ public class RowFactory implements Serializable {
         int[] types = new int[columnCount + 1];
         buildLabelNamesAndTypes(rsmd, labelNames, types);
         DataMapFactory dataMapFactory = dao.dataMapFactory();
+        Dialect dialect = dao.config().getDialect();
 
         while (rs.next()) {
             Map<String, Object> data = dataMapFactory.get();
             for (int i = 1; i <= columnCount; i++) {
-                Object value;
-                if (types[i] < Types.DATE) {
-                    value = rs.getObject(i);
-                } else {
-                    if (types[i] == Types.TIMESTAMP) {
-                        value = rs.getTimestamp(i);
-                    } else if (types[i] == Types.DATE) {
-                        value = rs.getDate(i);
-                    } else if (types[i] == Types.CLOB) {
-                        value = handleClob(rs.getClob(i));
-                    } else if (types[i] == Types.NCLOB) {
-                        value = handleClob(rs.getNClob(i));
-                    } else if (types[i] == Types.BLOB) {
-                        value = handleBlob(rs.getBlob(i));
-                    } else {
-                        value = rs.getObject(i);
-                    }
-                }
-
-                data.put(labelNames[i], value);
+                data.put(labelNames[i], dialect.readColumnValue(rs, i, types[i]));
             }
 
             AifeiRow<?> row = newRow(dao.rowType()).data(data);
@@ -109,31 +79,4 @@ public class RowFactory implements Serializable {
             types[i] = rsmd.getColumnType(i);
         }
     }
-
-    protected byte[] handleBlob(Blob blob) throws SQLException {
-        if (blob == null) {
-            return null;
-        }
-
-        try (InputStream is = blob.getBinaryStream()) {
-            if (is == null) {
-                return null;
-            }
-            byte[] data = new byte[(int) blob.length()];     // byte[] data = new byte[is.available()];
-            if (data.length == 0) {
-                return null;
-            }
-            is.read(data);
-            return data;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected String handleClob(Clob clob) throws SQLException {
-        return clob == null ? null : clob.getSubString(1, (int) clob.length());
-    }
 }
-
-
-

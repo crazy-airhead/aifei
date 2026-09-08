@@ -22,39 +22,42 @@ import cn.aifei.enjoy.util.InstanceUtil;
 import java.util.Map;
 
 /**
- * AifeiDbSupport 处理 aifei-db 的 Model 与 Row 之间的转换。 仅在 aifei-db 和 aifei-enjoy 存在时由 JsonKit 加载。
- *
- * @author airhead
+ * AifeiDbSupport 处理 aifei-db 的 Model 与 Row 之间的转换。
+ * 仅在 aifei-db 和 aifei-enjoy 存在时由 JsonKit 加载。
  */
 class AifeiDbSupport {
 
-  /** 若对象为 AifeiRow 且 modelAsRow 为 true，则将其转为 Row。 */
-  static Object toRowIfNeeded(Object obj, JsonObject jo) {
-    if (obj instanceof AifeiRow && Cpc.getModelAsRow(jo)) {
-      return new Row().data(((AifeiRow<?>) obj).data());
-    }
-    return obj;
-  }
+	/**
+	 * 若对象为 AifeiRow 且 modelAsRow 为 true，则将其转为 Row。
+	 */
+	static Object toRowIfNeeded(Object obj, JsonObject jo) {
+		if (obj instanceof AifeiRow && Cpc.getModelAsRow(jo)) {
+			return new Row().data(((AifeiRow<?>) obj).data());
+		}
+		return obj;
+	}
 
-  /**
-   * 若目标类型为 AifeiRow 子类且 modelAsRow 为 true，则先转为 Row 再创建 Model。
-   *
-   * @return 转换后的 Model 对象，或 null 表示不需要特殊处理
-   */
-  static Object toModelIfNeeded(Class<?> type, Map<String, Object> map, JsonString js) {
-    if (AifeiRow.class.isAssignableFrom(type) && Cpc.getModelAsRow(js)) {
-      boolean cs = Cpc.getCamelToSnake(js);
-      Row row = RowReader.toRow(map, cs);
-      if (row != null) {
-        AifeiRow<?> model = (AifeiRow<?>) InstanceUtil.get(type);
-        return model.data(row);
-      }
-    }
-    return null;
-  }
+	/**
+	 * 若目标类型为 AifeiRow 子类且 modelAsRow 为 true，则先转为 Row 再创建 Model。
+	 *
+	 * @return 转换后的 Model 对象，或 null 表示不需要特殊处理
+	 */
+	static Object toModelIfNeeded(Class<?> type, Map<String, Object> map, JsonString js) {
+		if (AifeiRow.class.isAssignableFrom(type) && Cpc.getModelAsRow(js)) {
+			boolean cs = Cpc.getCamelToSnake(js);
+			Row row = RowReader.toRow(map, cs);
+			if (row != null) {
+				AifeiRow<?> model = (AifeiRow<?>) InstanceUtil.get(type);
+				return model.data(row);
+			}
+		}
+		return null;
+	}
 
-  /** 判断类型是否为 AifeiRow 子类 */
-  static boolean isModel(Class<?> type) {
-    return AifeiRow.class.isAssignableFrom(type);
-  }
+	/**
+	 * 判断类型是否为 AifeiRow 子类
+	 */
+	static boolean isModel(Class<?> type) {
+		return AifeiRow.class.isAssignableFrom(type);
+	}
 }

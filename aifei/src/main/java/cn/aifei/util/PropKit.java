@@ -25,6 +25,16 @@ import java.util.stream.Collectors;
 
 /**
  * PropKit. 用于从 CLASSPATH 或指定文件加载 properties 配置文件.
+ *
+ * <pre>
+ * 备注：
+ * 1: 不要提供 useWithoutProfile 方法，否则下面用法会产生问题
+ *      PropKit.use("other.txt");                   // 缓存了带 profile 的版本
+ *      PropKit.useWithoutProfile("other.txt");     // 仍返回带 profile 的缓存
+ *
+ * 2: 有 useWithoutProfile 需求的地方可以使用如下用法
+ *      Prop other = new Prop("other.txt");
+ * </pre>
  */
 public class PropKit {
 
@@ -56,8 +66,7 @@ public class PropKit {
      */
     public static List<String> getActiveProfiles(Prop prop) {
         // 优先从系统变量中获取，支持命令行传参 --aifei.profiles.active=pro
-        // PropKit.prop 判断 null 值：仅第一次调用从系统变量中获取 activeProfiles，否则从 prop 中获取
-        String value = (PropKit.prop == null ? System.getProperty(activeProfilesKey) : null);
+        String value = System.getProperty(activeProfilesKey);
         if (StrUtil.isBlank(value)) {
             value = prop.get(activeProfilesKey);
             if (StrUtil.notBlank(value)) {

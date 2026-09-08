@@ -20,6 +20,8 @@ import cn.aifei.db.core.Cpc;
 import cn.aifei.db.core.AifeiRow;
 import cn.aifei.db.core.SqlPara;
 import cn.aifei.db.util.PageSqlUtil;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.sql.*;
 import java.util.*;
@@ -101,22 +103,27 @@ public abstract class Dialect {
     }
 
     /**
-     * fillStatement 时处理日期类型。除 mysql 以外的数据库需使用本方法
-     * 来自：jfinal Dialect.fillStatementHandleDateType(...)
+     * 保守处理 JDBC 日期参数，供不能从普通 java.util.Date
+     * 推断 SQL 类型的驱动使用。有明确驱动支持的方言可以覆盖本方法，
+     * 将参数直接交给 PreparedStatement.setObject(...)。
      */
     public void fillStatement(PreparedStatement pst, List<?> paras) throws SQLException {
         if (paras != null) {
             for (int i = 0, size = paras.size(); i < size; i++) {
                 Object value = paras.get(i);
                 if (value instanceof java.util.Date) {
-                    if (value instanceof java.sql.Date) {
-                        pst.setDate(i + 1, (java.sql.Date) value);
+                    if (value.getClass() == java.util.Date.class) {
+                        // 普通 Date 表示时间点，按 JDBC TIMESTAMP 绑定。
+                        pst.setTimestamp(i + 1, new java.sql.Timestamp(((java.util.Date) value).getTime()));
                     } else if (value instanceof java.sql.Timestamp) {
                         pst.setTimestamp(i + 1, (java.sql.Timestamp) value);
+                    } else if (value instanceof java.sql.Date) {
+                        pst.setDate(i + 1, (java.sql.Date) value);
+                    } else if (value instanceof java.sql.Time) {
+                        pst.setTime(i + 1, (java.sql.Time) value);
                     } else {
-                        // Oracle、SqlServer 中的 TIMESTAMP、DATE 支持 new Date() 给值
-                        java.util.Date d = (java.util.Date) value;
-                        pst.setTimestamp(i + 1, new java.sql.Timestamp(d.getTime()));
+                        // 其它 java.util.Date 子类也按时间点处理。
+                        pst.setTimestamp(i + 1, new java.sql.Timestamp(((java.util.Date) value).getTime()));
                     }
                 } else {
                     pst.setObject(i + 1, value);
@@ -418,10 +425,128 @@ public abstract class Dialect {
         sql.append("SELECT COUNT(*) ").append(sqlWithoutSelect);
         return new SqlPara(sql.toString(), sqlPara.getPara());
     }
+
+    /**
+     * 解析与 {@link #readColumnValue(ResultSet, int, int)} 字段读取策略对应的
+     * TypeMapping 源 Java 类名。
+     *
+     * <pre>
+     * 这里不能对所有字段都直接返回 ResultSetMetaData.getColumnClassName(int)。
+     * JDBC 规范中 getColumnClassName(int) 只描述 ResultSet.getObject(int) 所返回的对象类型，
+     * 它不描述 getDate(int)、getTimestamp(int) 等类型化 getter 的返回类型。
+     *
+     * Dialect 默认对 JDBC DATE、TIMESTAMP 分别调用 getDate(int)、getTimestamp(int)，
+     * 因此这两种类型必须分别返回 java.sql.Date、java.sql.Timestamp 的类名。
+     * 其它 JDBC 类型由 readColumnValue(...) 通过 getObject(int) 读取，才应该使用
+     * getColumnClassName(int) 作为源类名。Blob、Clob 等类型可在读取后被物化，
+     * 它们由 TypeMapping 将该源类名进一步映射为最终生成类型。
+     *
+     * 例如 MySQL Connector/J 将 DATETIME 报告为 JDBC TIMESTAMP，但其
+     * getColumnClassName(int) 可能返回 java.time.LocalDateTime。Aifei 运行时依据
+     * JDBC TIMESTAMP 调用 getTimestamp(int)，实际存入 Row 的是 java.sql.Timestamp。
+     * 当前 TypeMapping 恰好可能将这两个源类型映射成同一目标类型，但这不能
+     * 证明两个源类型相同；一旦用户定制 TypeMapping 或驱动行为变化，差异就会显现。
+     *
+     * 本方法的核心目的是保证：生成阶段用来匹配 TypeMapping 的源类型，
+     * 与运行阶段 readColumnValue(...) 的实际读取路径保持一致，进而使最终
+     * 生成类型与存入 Row 的值兼容。
+     *
+     * 如果子类覆盖 readColumnValue(...) 并改变了某种 JDBC 类型的读取方式，
+     * 必须同时覆盖本方法，使生成阶段与运行阶段继续保持一致。
+     * jdbcType 由调用方对当前列调用 getColumnType(int) 一次获取后传入，
+     * 以便类名推断与 JDBC 类型兜底共用同一个类型值，避免在
+     * MetaReader、Dialect 及子类 Dialect 中重复读取相同元数据。
+     * </pre>
+     *
+     * @see ResultSetMetaData#getColumnClassName(int)
+     * @see ResultSet#getObject(int)
+     * @see ResultSet#getDate(int)
+     * @see ResultSet#getTimestamp(int)
+     */
+    public String resolveColumnValueClassName(ResultSetMetaData resultSetMetaData, int columnIndex, int jdbcType) throws SQLException {
+        if (jdbcType == Types.DATE) {
+            return java.sql.Date.class.getName();
+        } else if (jdbcType == Types.TIMESTAMP) {
+            return java.sql.Timestamp.class.getName();
+        } else {
+            return resultSetMetaData.getColumnClassName(columnIndex);
+        }
+    }
+
+    /**
+     * 从 ResultSet 读取字段值。
+     *
+     * <pre>
+     * DATE、TIMESTAMP 分别通过 ResultSet.getDate(int)、getTimestamp(int) 读取，
+     * 以统一不同 JDBC 驱动的返回类型；其它类型默认通过 getObject(int) 读取，
+     * 并对驱动实际返回的 LOB 对象做物化处理。数据库或 JDBC 驱动有特殊读取规则时，
+     * 由具体 Dialect 覆盖本方法，并可将其它类型交回 super.readColumnValue(...)。
+     * </pre>
+     */
+    public Object readColumnValue(ResultSet resultSet, int columnIndex, int jdbcType) throws SQLException {
+        // String、Integer、Long、byte[] 等高频类型走 getObject 快速路径。
+        // JDBC Types 常量的数值不是类型分类；这个判断只是性能优化，DATE、TIMESTAMP 在下方明确读取。
+        if (jdbcType < Types.DATE) {
+            return resultSet.getObject(columnIndex);
+        } else if (jdbcType == Types.TIMESTAMP) {
+            return resultSet.getTimestamp(columnIndex);
+        } else if (jdbcType == Types.DATE) {
+            return resultSet.getDate(columnIndex);
+        }
+
+        Object value = resultSet.getObject(columnIndex);
+        switch (jdbcType) {
+            case Types.BLOB:
+                return value instanceof Blob ? readBlobAsBytes((Blob) value) : value;
+            case Types.CLOB:
+            case Types.NCLOB:
+                return value instanceof Clob ? readClobAsString((Clob) value) : value;
+            default:
+                return value;
+        }
+    }
+
+    protected byte[] readBlobAsBytes(Blob blob) throws SQLException {
+        if (blob == null) {
+            return null;
+        }
+
+        long length = blob.length();
+        if (length == 0) {
+            return new byte[0];
+        }
+        if (length > Integer.MAX_VALUE) {
+            throw new SQLException("Blob is too large to convert to byte[].");
+        }
+
+        try (InputStream is = blob.getBinaryStream()) {
+            if (is == null) {
+                return null;
+            }
+            byte[] data = new byte[(int) length];
+            int offset = 0;
+            while (offset < data.length) {
+                int read = is.read(data, offset, data.length - offset);
+                if (read <= 0) {
+                    break;
+                }
+                offset += read;
+            }
+            return offset == data.length ? data : Arrays.copyOf(data, offset);
+        } catch (IOException e) {
+            throw new SQLException("Failed to read Blob data.", e);
+        }
+    }
+
+    protected String readClobAsString(Clob clob) throws SQLException {
+        if (clob == null) {
+            return null;
+        }
+        long length = clob.length();
+        if (length > Integer.MAX_VALUE) {
+            throw new SQLException("Clob is too large to convert to String.");
+        }
+        return clob.getSubString(1, (int) length);
+    }
 }
-
-
-
-
-
 

@@ -398,8 +398,9 @@ public class DbConfig {
     }
 
     /**
-     * 配置事务抛出异常时的回调函数
-     * 注意：当前事务内部通过 tx.onException(...) 配置的回调函数，优先级高于此处的配置
+     * 配置全局事务异常回调，其返回值作为 transaction(...) 的返回值。顶层局部回调优先。
+     * 回调期间禁止通过同一 DbConfig 的常规入口访问数据库、开启事务；
+     * 其它 DbConfig 和直接使用 DataSource 不受限制。
      */
     public DbConfig setOnTransactionException(Function<Exception, ?> onTransactionException) {
         transactionKit.setOnException(onTransactionException);
@@ -458,6 +459,3 @@ public class DbConfig {
         this.maxResultRows = maxResultRows;
     }
 }
-
-
-

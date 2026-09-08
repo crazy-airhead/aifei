@@ -21,7 +21,9 @@ import cn.aifei.enjoy.util.StrUtil;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Function;
 
@@ -269,7 +271,7 @@ public class AifeiRow<R extends AifeiRow<R>> implements Iterable<Map.Entry<Strin
         }
     }
 
-    // 仅提供 CPI.setOrPut(Map) 用法，避免被 json 框架识别为 setter 方法
+    // 仅提供 Cpc.setOrPut(AifeiRow self, Map data) 用法，避免被 json 框架识别为 setter 方法
     R setOrPut(Map<String, Object> data) {
         if (data != null) {
             for (Map.Entry<String, Object> e : data.entrySet()) {
@@ -279,7 +281,7 @@ public class AifeiRow<R extends AifeiRow<R>> implements Iterable<Map.Entry<Strin
         return (R) this;
     }
 
-    // 仅提供 CPI.setOrPut(AifeiRow) 用法，避免被 json 框架识别为 setter 方法
+    // 仅提供 Cpc.setOrPut(AifeiRow self, AifeiRow dataRow) 用法，避免被 json 框架识别为 setter 方法
     R setOrPut(AifeiRow<?> row) {
         return row != null ? setOrPut(row.data) : (R) this;
     }
@@ -571,6 +573,30 @@ public class AifeiRow<R extends AifeiRow<R>> implements Iterable<Map.Entry<Strin
     }
 
     /**
+     * 获取 LocalDate 型字段值，主要用于不包含时间和时区的 SQL DATE。
+     */
+    public LocalDate getLocalDate(String field) {
+        return typeConverter.toLocalDate(get(field));
+    }
+
+    public LocalDate getLocalDate(String field, LocalDate defaultValue) {
+        Object v = get(field);
+        return v != null ? typeConverter.toLocalDate(v) : defaultValue;
+    }
+
+    /**
+     * 获取 LocalTime 型字段值，主要用于不包含日期和时区的 SQL TIME。
+     */
+    public LocalTime getLocalTime(String field) {
+        return typeConverter.toLocalTime(get(field));
+    }
+
+    public LocalTime getLocalTime(String field, LocalTime defaultValue) {
+        Object v = get(field);
+        return v != null ? typeConverter.toLocalTime(v) : defaultValue;
+    }
+
+    /**
      * 获取 Time 型字段值。支持的 mysql 字段类型: time
      */
     public java.sql.Time getTime(String field) {
@@ -598,23 +624,8 @@ public class AifeiRow<R extends AifeiRow<R>> implements Iterable<Map.Entry<Strin
         return typeConverter.toFloat(get(field));
     }
 
-    // /**
-    //  * 获取 Short 型字段值（拉低 getStr 输入效率，暂时去除该方法）
-    //  */
-    // public Short getShort(String field) {
-    //     return typeConverter.toShort(get(field));
-    // }
-
-    /**
-     * 获取 Byte 型字段值
-     */
-    public Byte getByte(String field) {
-        return typeConverter.toByte(get(field));
-    }
-
     /**
      * 获取 byte[] 型字段值。支持的 mysql 字段类型: binary, varbinary, tinyblob, blob, mediumblob, longblob
-     * I have not finished the test.
      */
     public byte[] getBytes(String field) {
         return get(field);
@@ -728,6 +739,4 @@ public class AifeiRow<R extends AifeiRow<R>> implements Iterable<Map.Entry<Strin
         return data().entrySet().iterator();
     }
 }
-
-
 

@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -176,11 +177,6 @@ public class QueryExecutor {
         return dao.config().getTypeConverter().toFloat(value);
     }
 
-    public Short queryShort(AifeiDao<?, ?> dao) {
-        Object value = queryField(dao);
-        return dao.config().getTypeConverter().toShort(value);
-    }
-
     public Number queryNumber(AifeiDao<?, ?> dao) {
         Object value = queryField(dao);
         return dao.config().getTypeConverter().toNumber(value);
@@ -189,11 +185,6 @@ public class QueryExecutor {
     public Boolean queryBoolean(AifeiDao<?, ?> dao) {
         Object value = queryField(dao);
         return dao.config().getTypeConverter().toBoolean(value);
-    }
-
-    public Byte queryByte(AifeiDao<?, ?> dao) {
-        Object value = queryField(dao);
-        return dao.config().getTypeConverter().toByte(value);
     }
 
     public byte[] queryBytes(AifeiDao<?, ?> dao) {
@@ -213,6 +204,11 @@ public class QueryExecutor {
     public LocalDate queryLocalDate(AifeiDao<?, ?> dao) {
         Object value = queryField(dao);
         return dao.config().getTypeConverter().toLocalDate(value);
+    }
+
+    public LocalTime queryLocalTime(AifeiDao<?, ?> dao) {
+        Object value = queryField(dao);
+        return dao.config().getTypeConverter().toLocalTime(value);
     }
 
     public java.sql.Timestamp queryTimestamp(AifeiDao<?, ?> dao) {

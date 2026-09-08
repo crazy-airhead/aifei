@@ -16,58 +16,54 @@
 
 package cn.aifei.server.feathttp.ssl;
 
-import cn.aifei.server.feathttp.FeatHttpConfig;
-import io.github.smartboot.socket.extension.plugins.SslPlugin;
-import io.github.smartboot.socket.extension.ssl.ClientAuth;
-import io.github.smartboot.socket.extension.ssl.factory.ServerSSLContextFactory;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import io.github.smartboot.socket.extension.plugins.SslPlugin;
+import io.github.smartboot.socket.extension.ssl.ClientAuth;
+import io.github.smartboot.socket.extension.ssl.factory.ServerSSLContextFactory;
 import tech.smartboot.feat.core.server.HttpServer;
+import cn.aifei.server.feathttp.FeatHttpConfig;
 
 /**
  * SslBuilder
- *
- * @author airhead
  */
 public class SslBuilder {
 
-  protected HttpServer httpServer;
-  protected FeatHttpConfig config;
-  protected SslConfig sslConfig;
+    protected HttpServer httpServer;
+    protected FeatHttpConfig config;
+    protected SslConfig sslConfig;
 
-  public SslBuilder(HttpServer httpServer, FeatHttpConfig config) {
-    this.httpServer = httpServer;
-    this.config = config;
-    this.sslConfig = config.getSslConfig();
-  }
-
-  public void build() {
-    try {
-      InputStream keystoreStream = loadKeyStoreStream();
-      String keyStorePassword = sslConfig.getKeyStorePassword();
-      String keyPassword =
-          sslConfig.getKeyPassword() != null ? sslConfig.getKeyPassword() : keyStorePassword;
-
-      ServerSSLContextFactory sslContextFactory =
-          new ServerSSLContextFactory(keystoreStream, keyStorePassword, keyPassword);
-      SslPlugin sslPlugin = new SslPlugin(sslContextFactory, ClientAuth.NONE);
-
-      httpServer.options().addPlugin(sslPlugin);
-    } catch (Exception ex) {
-      throw new IllegalStateException(ex);
+    public SslBuilder(HttpServer httpServer, FeatHttpConfig config) {
+        this.httpServer = httpServer;
+        this.config = config;
+        this.sslConfig = config.getSslConfig();
     }
-  }
 
-  protected InputStream loadKeyStoreStream() throws Exception {
-    String keyStorePath = sslConfig.getKeyStore();
-    InputStream stream = config.getClassLoader().getResourceAsStream(keyStorePath);
-    if (stream == null) {
-      stream = Files.newInputStream(Paths.get(keyStorePath));
+    public void build() {
+        try {
+            InputStream keystoreStream = loadKeyStoreStream();
+            String keyStorePassword = sslConfig.getKeyStorePassword();
+            String keyPassword = sslConfig.getKeyPassword() != null ? sslConfig.getKeyPassword() : keyStorePassword;
+
+            ServerSSLContextFactory sslContextFactory = new ServerSSLContextFactory(keystoreStream, keyStorePassword, keyPassword);
+            SslPlugin sslPlugin = new SslPlugin(sslContextFactory, ClientAuth.NONE);
+
+            httpServer.options().addPlugin(sslPlugin);
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
     }
-    if (stream == null) {
-      throw new RuntimeException("Could not load keystore: " + keyStorePath);
+
+    protected InputStream loadKeyStoreStream() throws Exception {
+        String keyStorePath = sslConfig.getKeyStore();
+        InputStream stream = config.getClassLoader().getResourceAsStream(keyStorePath);
+        if (stream == null) {
+            stream = Files.newInputStream(Paths.get(keyStorePath));
+        }
+        if (stream == null) {
+            throw new RuntimeException("Could not load keystore: " + keyStorePath);
+        }
+        return stream;
     }
-    return stream;
-  }
 }

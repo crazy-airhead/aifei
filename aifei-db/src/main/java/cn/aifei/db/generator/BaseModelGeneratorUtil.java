@@ -32,10 +32,9 @@ import java.util.Map;
 public class BaseModelGeneratorUtil {
 
     /**
-     * 针对 Model 中七种可以自动转换类型的 getter 方法，调用其具有确定类型返回值的 getter 方法
+     * 针对 Model 中可以自动转换类型的 getter 方法，调用其具有确定类型返回值的 getter 方法
      * 享用自动类型转换的便利性，例如 getInt(String)、getStr(String)
      * 其它方法使用泛型返回值方法： get(String)
-     * 注意：jfinal 3.2 及以上版本 Model 中的六种 getter 方法才具有类型转换功能
      */
     private final Map<String, String> getterTypeMap = new HashMap<String, String>() {{
         put("String", "getStr");
@@ -43,11 +42,11 @@ public class BaseModelGeneratorUtil {
         put("Long", "getLong");
         put("Double", "getDouble");
         put("Float", "getFloat");
-        put("Short", "getShort");
-        put("Byte", "getByte");
 
-        // 新增两种可自动转换类型的 getter 方法
+        // 日期时间类型使用转换 getter，使生成类型不必与 JDBC 运行时对象完全相同
         put("java.util.Date", "getDate");
+        put("java.time.LocalDate", "getLocalDate");
+        put("java.time.LocalTime", "getLocalTime");
         put("java.time.LocalDateTime", "getLocalDateTime");
 
         // 新增 TypeKit 转换类之后，支持了更多的类型

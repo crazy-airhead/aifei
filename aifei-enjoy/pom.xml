@@ -7,7 +7,7 @@
     <parent>
         <groupId>cn.aifei</groupId>
         <artifactId>aifei-parent</artifactId>
-        <version>1.0.3</version>
+        <version>1.1.0</version>
     </parent>
 
     <artifactId>aifei-enjoy</artifactId>
@@ -15,6 +15,14 @@
 
     <name>aifei-enjoy</name>
     <description>Aifei Enjoy template engine</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>

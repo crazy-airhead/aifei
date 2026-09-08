@@ -38,22 +38,26 @@ public class TransactionExecutor {
 
         // 嵌套事务
         if (transaction != null) {
+            // 禁止在当前事务的 onException 回调中再次开启事务（仅限制同一 DbConfig 对象）
+            transaction.checkOperationAllowed();
             return handleNestedTransaction(transaction, isolation, atom, onBeforeCommit);
         }
 
         Connection connection = null;
+        boolean transactionInitialized = false;
         try {
             connection = config.getDataSource().getConnection();
             transaction = new Transaction<>(connection, isolation.level);
-            transactionKit.setTransaction(transaction);
             transaction.begin();
+            transactionKit.setTransaction(transaction);
+            transactionInitialized = true;
 
             R ret = atom.run(transaction);
             // 若返回值类型实现了 RollbackDecision 接口，则根据其 shouldRollback() 返回值决定是否回滚事务
             if (ret instanceof RollbackDecision && ((RollbackDecision) ret).shouldRollback()) {
                 transaction.rollback();
             }
-            // 内层、外层调用 onBeforeCommit 处理各自的 ret 返回值
+            // 内层、外层调用 onBeforeCommit 校验各自的 ret 返回值
             if (onBeforeCommit != null && transaction.canCommit()) {
                 onBeforeCommit.accept(transaction, ret);
             }
@@ -75,21 +79,35 @@ public class TransactionExecutor {
                 }
             }
 
-            // 异常回调，局部回调优先级高于全局回调
-            if (transaction != null && transaction.getOnException() != null) {
-                log.error(e.getMessage(), e);           // 未抛出的异常做日志
-                return transaction.getOnException().apply(e);
-            } else if (transactionKit.getOnException() != null) {
-                log.error(e.getMessage(), e);           // 未抛出的异常做日志
-                return (R) transactionKit.getOnException().apply(e);
+            // 事务初始化成功才允许执行异常回调，局部回调优先级高于全局回调
+            if (transactionInitialized) {
+                if (transaction.getOnException() != null) {
+                    log.error(e.getMessage(), e);           // 未抛出的异常做日志
+                    return transaction.executeOnException(transaction.getOnException(), e);
+                } else if (transactionKit.getOnException() != null) {
+                    log.error(e.getMessage(), e);           // 未抛出的异常做日志
+                    return transaction.executeOnException((Function<Exception, R>) transactionKit.getOnException(), e);
+                }
             }
 
-            // 没有异常回调时向上抛出异常
+            // 没有异常回调或者事务初始化失败时向上抛出异常
             throw e instanceof RuntimeException ? (RuntimeException) e : new AifeiDbException(e);
+
+        } catch (Error e) {
+            // Error 也必须回滚事务，但不得包装或转换为业务异常
+            if (transaction != null) {
+                try {
+                    transaction.rollbackImmediately();
+                } catch (Exception ex) {
+                    log.error(ex.getMessage(), ex);     // 未抛出的异常做日志
+                }
+            }
+            throw e;
 
         } finally {
             boolean closeOnException = true;
             try {
+                // 尝试恢复连接状态，避免状态泄漏给后续使用者；回滚失败时会跳过恢复，避免意外提交
                 if (transaction != null) {
                     transaction.end();
                 }
@@ -112,11 +130,16 @@ public class TransactionExecutor {
             } finally {
                 transactionKit.removeTransaction();
             }
+
+            // 连接关闭且 ThreadLocal 清理后执行，仅提交成功时生效
+            if (transaction != null) {
+                transaction.executeOnCommitSuccess();
+            }
         }
     }
 
     private <R> R handleNestedTransaction(Transaction<R> transaction, Isolation isolation, Atom<R> atom, BiConsumer<Transaction<?>, Object> onBeforeCommit) {
-        // 持有并删除上层回调函数：1、供后续在 finally 中恢复。2、避免本层无回调函数且异常发生时调用到上层回调函数
+        // 暂存并移除上层回调，避免本层误用；finally 中恢复
         Function<Exception, R> upperLevelOnException = transaction.getAndRemoveOnException();
 
         try {
@@ -127,7 +150,7 @@ public class TransactionExecutor {
             if (ret instanceof RollbackDecision && ((RollbackDecision) ret).shouldRollback()) {
                 transaction.rollback();
             }
-            // 内层、外层调用 onBeforeCommit 处理各自的 ret 返回值
+            // 内层、外层调用 onBeforeCommit 校验各自的 ret 返回值
             if (onBeforeCommit != null && transaction.canCommit()) {
                 onBeforeCommit.accept(transaction, ret);
             }
@@ -136,21 +159,26 @@ public class TransactionExecutor {
         } catch (Exception e) {
             transaction.rollback();
 
-            // 此处不 return 回调函数的执行结果，否则上层事务感知不到异常可能会认为业务执行成功（虽然事务会被回滚）
-            // 由于后续仍然抛出异常，所以回调函数返回值无意义，但回调函数中可能有代码需要被执行，不必节省这点消耗
+            // 嵌套事务不能吞掉异常，因此只执行回调，不使用其返回值
             if (transaction.getOnException() != null) {
-                transaction.getOnException().apply(e);  // 注意不要 return，需在后面抛出异常
+                try {
+                    transaction.executeOnException(transaction.getOnException(), e);
+                } catch (Exception ex) {
+                    // 回调抛出的 Exception 不得掩盖原始异常，记录日志后继续抛出原始异常（Error 不捕获，仍向外抛出）
+                    log.error(ex.getMessage(), ex);         // 未抛出的异常做日志
+                }
             }
 
-            // 向上抛出：1、否则上层可能误以为事务已提交业务已成功。2、避免执行后续未执行的代码。3、上层做日志。
+            // 向上抛出，避免外层误判业务成功或继续执行
             throw e instanceof RuntimeException ? (RuntimeException) e : new AifeiDbException(e);
 
+        } catch (Error e) {
+            transaction.rollback();
+            throw e;
+
         } finally {
-            // 恢复上一层异常回调函数（即使为 null），确保回调函数执行结果返回给正确的调用者（层级正确）
+            // 恢复上层回调（包括 null）
             transaction.onException(upperLevelOnException);
         }
     }
 }
-
-
-

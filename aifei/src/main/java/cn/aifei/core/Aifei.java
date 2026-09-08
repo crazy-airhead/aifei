@@ -34,19 +34,32 @@ import java.nio.file.Path;
  */
 public class Aifei {
 
-    static final String VERSION = "1.0.3";
+    static final String VERSION = "1.1.0";
 
     static Routes routes;
     static Plugins plugins;
     static Settings<?, ?> settings;
     static AifeiConfig<?, ?> aifeiConfig;
+    static volatile boolean started = false;
 
     private Aifei() {}
 
     public static <I extends Input, O extends Output> void start(AifeiConfig<I, O> aifeiConfig, String[] args) {
         Objects.requireNonNull(aifeiConfig, "aifeiConfig can not be null.");
+        if (started) {
+            throw new IllegalStateException("Aifei already started.");
+        }
 
-        System.out.println("Starting Aifei " + VERSION);
+        try {
+            doStart(aifeiConfig, args);
+        } catch (Throwable t) {
+            reportError("Failed to start Aifei.", t);
+            System.exit(1);
+        }
+    }
+
+    private static <I extends Input, O extends Output> void doStart(AifeiConfig<I, O> aifeiConfig, String[] args) {
+        System.out.println("\nStarting Aifei " + VERSION);
         long startTime = System.currentTimeMillis();
         commandLineArgumentToSystemProperty(args);
         Aifei.aifeiConfig = aifeiConfig;
@@ -85,13 +98,15 @@ public class Aifei {
 
         // 启动 Server
         settings.getServer().start();
-        System.out.println("Started in " + getTimeSpent(startTime) + " s. Enjoy Aifei (^_^)\n");
+        started = true;
+        String timeSpent = getTimeSpent(startTime);
 
         /*
          * 使用 kill pid 命令或者 ctrl + c 关闭 JVM 时，调用 Aifei.stop() 方法。
-         * 注意：aifei 下测试成功。只支持 kill pid 不支持 kill -9 pid
+         * 注意: 只支持 kill pid 不支持 kill -9 pid
          */
         Runtime.getRuntime().addShutdownHook(new Thread(Aifei::stop));
+        System.out.println("Started in " + timeSpent + " s. Enjoy Aifei (^_^)\n");
     }
 
     /**
@@ -121,7 +136,7 @@ public class Aifei {
                     arg = arg.trim().substring(2);
 
                     if (arg.contains("=")) {
-                        String[] parts = arg.split("=");
+                        String[] parts = arg.split("=", 2);
                         if (parts.length != 2 || StrUtil.isBlank(parts[0]) || StrUtil.isBlank(parts[1])) {
                             throw new IllegalArgumentException("Invalid argument syntax: \"" + originalArg + "\"");
                         }
@@ -140,14 +155,29 @@ public class Aifei {
         }
     }
 
-    public static void stop() {
+    public static synchronized void stop() {
+        if (!started) {
+            return;
+        }
+        started = false;
+
         System.out.println("Stopping Aifei " + VERSION);
         long startTime = System.currentTimeMillis();
 
         // 关闭 Server
-        settings.getServer().stop();
+        try {
+            settings.getServer().stop();
+        } catch (Throwable t) {
+            reportError("Failed to stop server.", t);
+        }
+
         // 回调 onStop，仍可使用 plugin
-        aifeiConfig.onStop();
+        try {
+            aifeiConfig.onStop();
+        } catch (Throwable t) {
+            reportError("Failed to invoke AifeiConfig.onStop().", t);
+        }
+
         // 关闭 Plugin
         stopPlugins(plugins);
 
@@ -163,19 +193,32 @@ public class Aifei {
         for (Plugin plugin : plugins.getPluginList()) {
             try {
                 plugin.start();
-            } catch (Exception e) {
-                Log.get(Aifei.class).error("Starting plugin error: " + e.getMessage(), e);
-                throw new RuntimeException(e.getMessage(), e);  // 抛异常终止启动
+            } catch (Throwable t) {
+                throw new IllegalStateException("Failed to start plugin: " + plugin.getClass().getName(), t);
             }
         }
     }
 
     private static void stopPlugins(Plugins plugins) {
-        for (Plugin plugin : plugins.getPluginList()) {
+        List<Plugin> pluginList = plugins.getPluginList();
+        for (int i = pluginList.size() - 1; i >= 0; i--) {
+            Plugin plugin = pluginList.get(i);
             try {
                 plugin.stop();
-            } catch (Exception e) {
-                Log.get(Aifei.class).error("Stopping plugin error: " + e.getMessage(), e);
+            } catch (Throwable t) {
+                reportError("Failed to stop plugin: " + plugin.getClass().getName(), t);
+            }
+        }
+    }
+
+    private static void reportError(String message, Throwable t) {
+        try {
+            Log.get(Aifei.class).error(message, t);
+        } catch (Throwable ignored) {
+            try {
+                System.err.println(message);
+                t.printStackTrace(System.err);
+            } catch (Throwable ignoredAgain) {
             }
         }
     }
@@ -225,5 +268,4 @@ public class Aifei {
         return settings;
     }
 }
-
 

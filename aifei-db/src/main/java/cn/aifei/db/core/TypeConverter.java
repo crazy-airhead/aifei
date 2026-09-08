@@ -29,14 +29,6 @@ import java.time.temporal.Temporal;
  */
 public class TypeConverter implements Serializable {
 
-    private static final String datePattern = "yyyy-MM-dd";
-    private static final int dateLen = datePattern.length();
-
-    private static final String dateTimeWithoutSecondPattern = "yyyy-MM-dd HH:mm";
-    private static final int dateTimeWithoutSecondLen = dateTimeWithoutSecondPattern.length();
-
-    private static final String dateTimePattern = "yyyy-MM-dd HH:mm:ss";
-
     public String toStr(Object s) {
         if (s instanceof String) {
             return (String) s;
@@ -125,47 +117,11 @@ public class TypeConverter implements Serializable {
         }
     }
 
-    public Short toShort(Object n) {
-        if (n instanceof Short) {
-            return (Short) n;
-        } else if (n == null) {
-            return null;
-        } else if (n instanceof Number) {
-            return ((Number) n).shortValue();
-        } else {
-            return Short.valueOf(n.toString()); // 支持 String 类型转换
-        }
-    }
-
-    public Byte toByte(Object n) {
-        if (n instanceof Byte) {
-            return (Byte) n;
-        } else if (n == null) {
-            return null;
-        } else if (n instanceof Number) {
-            return ((Number) n).byteValue();
-        } else {
-            return Byte.valueOf(n.toString());  // 支持 String 类型转换
-        }
-    }
-
     public Boolean toBoolean(Object b) {
         if (b instanceof Boolean) {
             return (Boolean) b;
         } else if (b == null) {
             return null;
-        }
-
-        // 支持 String
-        if (b instanceof String) {
-            String s = (String) b;
-            if ("true".equals(s) || "1".equals(s)) {
-                return Boolean.TRUE;
-            } else if ("false".equals(s) || "0".equals(s)) {
-                return Boolean.FALSE;
-            } else {
-                throw new IllegalArgumentException("Cannot convert String value \"" + s + "\" to Boolean. Only 'true', 'false', '1', and '0' are supported.");
-            }
         }
 
         // 支持 Number
@@ -177,6 +133,18 @@ public class TypeConverter implements Serializable {
                 return Boolean.FALSE;
             } else {
                 throw new IllegalArgumentException("Cannot convert Number value " + n + " to Boolean. Only 0 and 1 are supported.");
+            }
+        }
+
+        // 支持 String
+        if (b instanceof String) {
+            String s = (String) b;
+            if ("true".equals(s) || "1".equals(s)) {
+                return Boolean.TRUE;
+            } else if ("false".equals(s) || "0".equals(s)) {
+                return Boolean.FALSE;
+            } else {
+                throw new IllegalArgumentException("Cannot convert String value \"" + s + "\" to Boolean. Only 'true', 'false', '1', and '0' are supported.");
             }
         }
 
@@ -197,7 +165,7 @@ public class TypeConverter implements Serializable {
     }
 
     public java.util.Date toDate(Object d) {
-        if (d instanceof java.util.Date) {
+        if (d instanceof java.util.Date) {  // 支持由数据库而来的高频类型 java.sql.Timestamp
             return (java.util.Date) d;
         } else if (d == null) {
             return null;
@@ -205,40 +173,30 @@ public class TypeConverter implements Serializable {
 
         if (d instanceof Temporal) {
             if (d instanceof LocalDateTime) {
-                return TimeUtil.toDate((LocalDateTime) d);
+                // 按 JDBC 本地日期时间语义保留字段与纳秒，不先转换成 Instant。
+                return Timestamp.valueOf((LocalDateTime) d);
             }
             if (d instanceof LocalDate) {
-                return TimeUtil.toDate((LocalDate) d);
+                // java.sql.Date 是 java.util.Date 的子类，同时保留 SQL DATE 语义。
+                return java.sql.Date.valueOf((LocalDate) d);
             }
-            if (d instanceof LocalTime) {
-                return TimeUtil.toDate((LocalTime) d);
+            if (d instanceof Instant) {
+                return Timestamp.from((Instant) d);
             }
             if (d instanceof OffsetDateTime) {
-                return TimeUtil.toDate(((OffsetDateTime) d).toLocalDateTime());
+                // OffsetDateTime 表示确定的时间点，不能先调用 toLocalDateTime() 丢弃 offset。
+                return Timestamp.from(((OffsetDateTime) d).toInstant());
             }
             if (d instanceof ZonedDateTime) {
-                return TimeUtil.toDate(((ZonedDateTime) d).toLocalDateTime());
+                return Timestamp.from(((ZonedDateTime) d).toInstant());
+            }
+            if (d instanceof LocalTime || d instanceof OffsetTime) {
+                throw new IllegalArgumentException("Cannot convert " + d.getClass().getSimpleName() + " to java.util.Date without a date.");
             }
         }
 
         if (d instanceof String) {
-            String s = (String) d;
-            if (s.length() <= dateLen) {
-                return TimeUtil.parse(s, datePattern);
-            } else if (s.length() > dateTimeWithoutSecondLen) {
-                return TimeUtil.parse(s, dateTimePattern);
-            } else {
-                // 判断冒号字符是否出现两次，月、日、小时、分、秒都允许是一位数，例如：2022-1-2 3:4:5
-                int index = s.indexOf(':');
-                if (index != -1) {
-                    if (index != s.lastIndexOf(':')) {
-                        return TimeUtil.parse(s, dateTimePattern);
-                    } else {
-                        return TimeUtil.parse(s, dateTimeWithoutSecondPattern);
-                    }
-                }
-            }
-            throw new IllegalArgumentException("Unrecognized Date string format: \"" + s + "\"");
+            return TimeUtil.parse((String) d);
         }
 
         throw new IllegalArgumentException("Cannot convert type " + d.getClass().getName() + " to java.util.Date.");
@@ -251,6 +209,15 @@ public class TypeConverter implements Serializable {
             return null;
         }
 
+        if (ldt instanceof Timestamp) {
+            return ((Timestamp) ldt).toLocalDateTime();
+        }
+        if (ldt instanceof java.sql.Date) {
+            return ((java.sql.Date) ldt).toLocalDate().atStartOfDay();
+        }
+        if (ldt instanceof java.sql.Time) {
+            throw new IllegalArgumentException("Cannot convert java.sql.Time to LocalDateTime without a date.");
+        }
         if (ldt instanceof java.util.Date) {
             return TimeUtil.toLocalDateTime((java.util.Date) ldt);
         }
@@ -258,28 +225,11 @@ public class TypeConverter implements Serializable {
             return ((LocalDate) ldt).atStartOfDay();
         }
         if (ldt instanceof LocalTime) {
-            // LocalTime 无法单独转为 LocalDateTime，这里默认使用当前日期填充
-            return LocalDateTime.of(LocalDate.now(), (LocalTime) ldt);
+            throw new IllegalArgumentException("Cannot convert LocalTime to LocalDateTime without a date.");
         }
 
         if (ldt instanceof String) {
-            String s = (String) ldt;
-            if (s.length() <= dateLen) {
-                return TimeUtil.parseLocalDateTime(s, datePattern);
-            } else if (s.length() > dateTimeWithoutSecondLen) {
-                return TimeUtil.parseLocalDateTime(s, dateTimePattern);
-            } else {
-                // 判断冒号字符是否出现两次，月、日、小时、分、秒都允许是一位数，例如：2022-1-2 3:4:5
-                int index = s.indexOf(':');
-                if (index != -1) {
-                    if (index != s.lastIndexOf(':')) {
-                        return TimeUtil.parseLocalDateTime(s, dateTimePattern);
-                    } else {
-                        return TimeUtil.parseLocalDateTime(s, dateTimeWithoutSecondPattern);
-                    }
-                }
-            }
-            throw new IllegalArgumentException("Unrecognized LocalDateTime string format: \"" + s + "\"");
+            return TimeUtil.parseLocalDateTime((String) ldt);
         }
 
         throw new IllegalArgumentException("Cannot convert type " + ldt.getClass().getName() + " to LocalDateTime.");
@@ -290,11 +240,66 @@ public class TypeConverter implements Serializable {
             return (LocalDate) ld;
         } else if (ld == null) {
             return null;
-        } else if (ld instanceof java.util.Date) {
-            return TimeUtil.toLocalDate((java.util.Date) ld);
-        } else {
-            return toLocalDateTime(ld).toLocalDate();
         }
+
+        if (ld instanceof java.sql.Date) {
+            return ((java.sql.Date) ld).toLocalDate();
+        }
+        if (ld instanceof Timestamp) {
+            return ((Timestamp) ld).toLocalDateTime().toLocalDate();
+        }
+        if (ld instanceof java.sql.Time) {
+            throw new IllegalArgumentException("Cannot convert java.sql.Time to LocalDate without a date.");
+        }
+        if (ld instanceof java.util.Date) {
+            return TimeUtil.toLocalDate((java.util.Date) ld);
+        }
+        if (ld instanceof LocalDateTime) {
+            return ((LocalDateTime) ld).toLocalDate();
+        }
+        if (ld instanceof LocalTime) {
+            throw new IllegalArgumentException("Cannot convert LocalTime to LocalDate without a date.");
+        }
+        if (ld instanceof String) {
+            return TimeUtil.parseLocalDateTime((String) ld).toLocalDate();
+        }
+
+        throw new IllegalArgumentException("Cannot convert type " + ld.getClass().getName() + " to LocalDate.");
+    }
+
+    public LocalTime toLocalTime(Object lt) {
+        if (lt instanceof LocalTime) {
+            return (LocalTime) lt;
+        } else if (lt == null) {
+            return null;
+        }
+
+        if (lt instanceof java.sql.Time) {
+            return ((java.sql.Time) lt).toLocalTime();
+        }
+        if (lt instanceof Timestamp) {
+            return ((Timestamp) lt).toLocalDateTime().toLocalTime();
+        }
+        if (lt instanceof java.sql.Date) {
+            throw new IllegalArgumentException("Cannot convert java.sql.Date to LocalTime without a time.");
+        }
+        if (lt instanceof java.util.Date) {
+            return TimeUtil.toLocalTime((java.util.Date) lt);
+        }
+        if (lt instanceof LocalDateTime) {
+            return ((LocalDateTime) lt).toLocalTime();
+        }
+        if (lt instanceof LocalDate) {
+            throw new IllegalArgumentException("Cannot convert LocalDate to LocalTime without a time.");
+        }
+        if (lt instanceof OffsetTime || lt instanceof OffsetDateTime) {
+            throw new IllegalArgumentException("Cannot convert " + lt.getClass().getSimpleName() + " to LocalTime without discarding its offset.");
+        }
+        if (lt instanceof String) {
+            return TimeUtil.parseLocalTime((String) lt);
+        }
+
+        throw new IllegalArgumentException("Cannot convert type " + lt.getClass().getName() + " to LocalTime.");
     }
 
     public Timestamp toTimestamp(Object ts) {
@@ -302,18 +307,48 @@ public class TypeConverter implements Serializable {
             return (Timestamp) ts;
         } else if (ts == null) {
             return null;
-        } else if (ts instanceof java.util.Date) {
+        }
+
+        if (ts instanceof java.sql.Time) {
+            throw new IllegalArgumentException("Cannot convert java.sql.Time to Timestamp without a date.");
+        }
+        if (ts instanceof java.util.Date) {
             return new Timestamp(((java.util.Date) ts).getTime());
-        } else if (ts instanceof LocalDateTime) {
-            return Timestamp.from(((LocalDateTime) ts).atZone(ZoneId.systemDefault()).toInstant());
-        } else if (ts instanceof LocalDate) {
-            return Timestamp.from(((LocalDate) ts).atStartOfDay(ZoneId.systemDefault()).toInstant());
-        } else if (ts instanceof Long) {
+        }
+        if (ts instanceof LocalDateTime) {
+            return Timestamp.valueOf((LocalDateTime) ts);
+        }
+        if (ts instanceof LocalDate) {
+            return Timestamp.valueOf(((LocalDate) ts).atStartOfDay());
+        }
+        if (ts instanceof Long) {
             return new Timestamp((Long) ts);
         }
 
         throw new IllegalArgumentException("Cannot convert type " + ts.getClass().getName() + " to Timestamp.");
     }
+
+    // public Short toShort(Object n) {
+    //     if (n instanceof Short) {
+    //         return (Short) n;
+    //     } else if (n == null) {
+    //         return null;
+    //     } else if (n instanceof Number) {
+    //         return ((Number) n).shortValue();
+    //     } else {
+    //         return Short.valueOf(n.toString()); // 支持 String 类型转换
+    //     }
+    // }
+
+    // public Byte toByte(Object n) {
+    //     if (n instanceof Byte) {
+    //         return (Byte) n;
+    //     } else if (n == null) {
+    //         return null;
+    //     } else if (n instanceof Number) {
+    //         return ((Number) n).byteValue();
+    //     } else {
+    //         return Byte.valueOf(n.toString());  // 支持 String 类型转换
+    //     }
+    // }
 }
-
-

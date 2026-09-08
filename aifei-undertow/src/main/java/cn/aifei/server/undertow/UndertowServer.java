@@ -16,8 +16,8 @@
 
 package cn.aifei.server.undertow;
 
-import static cn.aifei.server.undertow.UndertowConfig.*;
-
+import java.util.List;
+import java.util.function.Consumer;
 import cn.aifei.server.Dispatcher;
 import cn.aifei.server.Server;
 import cn.aifei.server.undertow.handler.HttpToHttpsHandler;
@@ -27,10 +27,10 @@ import cn.aifei.server.undertow.util.IpUtil;
 import cn.aifei.util.StrUtil;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
-import io.undertow.UndertowOptions;
-import io.undertow.Version;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.Predicates;
+import io.undertow.UndertowOptions;
+import io.undertow.Version;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.SetHeaderHandler;
@@ -38,8 +38,7 @@ import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.resource.ResourceManager;
-import java.util.List;
-import java.util.function.Consumer;
+import static cn.aifei.server.undertow.UndertowConfig.*;
 
 /*
  * UndertowServer
@@ -48,7 +47,7 @@ import java.util.function.Consumer;
  */
 public class UndertowServer implements Server<HttpServerExchange, Void> {
 
-    static final String version = "1.0.3";
+    static final String version = "1.1.0";
     protected Builder builder;
     protected Undertow undertow;
     protected UndertowConfig config;
@@ -133,22 +132,15 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
             started = true;
 
         } catch (Exception e) {
-            e.printStackTrace(System.err);
-            // 支持在 doStart() 中抛出异常后退出 JVM，例如端口被占用，否则在 linux 控制台 JVM 并不会退出
-            System.exit(1);
-        }
-    }
-
-    @Override
-    public synchronized void stop() {
-        if (started) {
-            undertow.stop();
-            started = false;
+            throw new IllegalStateException("Failed to start Undertow server.", e);
         }
     }
 
     protected void printServerUrls() {
+        String host = config.getHost() != null ? config.getHost().trim() : "0.0.0.0";
+
         String msg = "Server running at\n";
+        msg += " > Bind:    " + host + "\n";
         msg += " > Local:   http://localhost:" + config.getPort();
         if (config.isSslEnable()) {
             msg += "   https://localhost:" + config.getSslConfig().getPort();
@@ -156,7 +148,6 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
         msg += "\n";
 
         // host 配置为 "0.0.0.0"、"::" 或者具体的 ip 地址才允许网络访问
-        String host = config.getHost() != null ? config.getHost().trim() : "0.0.0.0";
         if ("localhost".equals(host) || "127.0.0.1".equals(host)) {
             System.out.print(msg);
             return;
@@ -237,6 +228,13 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
         }
     }
 
+    // 使用短变量名: port、host、resourcePath、ioThreads、workerThreads
+    // 兼容带 "undertow." 前缀的长变量名，如: undertow.port
+    private String getSystemProperty(String shortName, String longName) {
+        String ret = System.getProperty(shortName);
+        return StrUtil.notBlank(ret) ? ret : System.getProperty(longName);
+    }
+
     protected void configUndertow() {
         // url 支持特殊字符，例如: '{' 与 '}'
         builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
@@ -268,6 +266,9 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
         builder.setServerOption(UndertowOptions.MAX_ENTITY_SIZE, config.getMaxBodySize());
         // 配置 multipart request body 最大值。文件上传受此配置控制
         builder.setServerOption(UndertowOptions.MULTIPART_MAX_ENTITY_SIZE, config.getMaxBodySize());
+
+        // 配置 header 最大值。默认值从 undertow 默认的 1M 缩小到 16KB
+        builder.setServerOption(UndertowOptions.MAX_HEADER_SIZE, config.getMaxHeaderSize());
 
         // 为 UndertowHandler 配置 ResourceManager 处理静态资源
         ResourceManagerBuilder builder = new ResourceManagerBuilder(config.getResourcePath(), config.getClassLoader());
@@ -327,11 +328,12 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
         }
     }
 
-    // 使用短变量名: port、host、resourcePath、ioThreads、workerThreads
-    // 兼容带 "undertow." 前缀的长变量名，如: undertow.port
-    private String getSystemProperty(String shortName, String longName) {
-        String ret = System.getProperty(shortName);
-        return StrUtil.notBlank(ret) ? ret : System.getProperty(longName);
+    @Override
+    public synchronized void stop() {
+        if (started) {
+            undertow.stop();
+            started = false;
+        }
     }
 }
 

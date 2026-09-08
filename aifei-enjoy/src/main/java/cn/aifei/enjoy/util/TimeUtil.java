@@ -16,49 +16,73 @@
 
 package cn.aifei.enjoy.util;
 
-import java.text.ParseException;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.chrono.ChronoLocalDateTime;
+import java.time.chrono.IsoEra;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
+import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.HashMap;
 
 /**
  * TimeUtil 用于简化 JDK 8 新增的时间 API
  *
+ * <pre>
  * 新旧日期转换通过桥梁 Instant 进行，转成 LocalDate、LocalTime 需要先转成 LocalDateTime：
  *   新转旧：LocalDateTime.atZone(ZoneId).toInstant() -> Instant -> Date.from(Instant)
  *   旧转新：Date.toInstant() -> Instant -> LocalDateTime.ofInstant(Instant, ZoneId)
  *
- * 经测试，SimpleDateFormat 比 DateTimeFormatter 对 pattern 的支持更好
- * 对于同样的 pattern 值 "yyyy-MM-dd HH:mm:ss"，前者可以转换 "2020-06-9 12:13:19"
- * 后者却不支持，原因是 pattern 的 dd 位置只有数字 9，必须要是两位数字才能支持
+ * getDateTimeFormatter 返回的格式化器在解析数字字段时不强制匹配 pattern 的位数，例如
+ * pattern 为 "yyyy-MM-dd HH:mm:ss" 时可以解析 "2026-1-2 3:4:5"，但会拒绝不存在的日期
  *
- *
- * 所以：建议优先使用转换结果为 Date 的 parse 方法，使用 SimpleDateFormat 来转换
+ * 备忘：不要提供 java.util.Date toDate(java.time.LocalTime)
+ * </pre>
  */
 public class TimeUtil {
 
     /**
      * 缓存线程安全的 DateTimeFormatter
      */
-    private static final ComputeCache<String, DateTimeFormatter> formatters = new ComputeCache<>();
+    private static final ComputeCache<String, DateTimeFormatter> dateTimeFormatterCache = new ComputeCache<>();
+
+    /**
+     * 结合 ThreadLocal 缓存 "非线程安全" 的 SimpleDateFormat，使用严格解析模式
+     */
+    private static final ThreadLocal<HashMap<String, SimpleDateFormat>> simpleDateFormatCache = ThreadLocal.withInitial(HashMap::new);
 
     public static DateTimeFormatter getDateTimeFormatter(String pattern) {
-        return formatters.computeIfAbsent(pattern, DateTimeFormatter::ofPattern);
+        return dateTimeFormatterCache.computeIfAbsent(pattern, TimeUtil::createDateTimeFormatter);
     }
 
     /**
-     * 结合 ThreadLocal 缓存 "非线程安全" 的 SimpleDateFormat
+     * 创建数字字段输入宽度宽松、日期合法性校验严格的 DateTimeFormatter
      */
-    private static final ThreadLocal<HashMap<String, SimpleDateFormat>> TL = ThreadLocal.withInitial(HashMap::new);
+    private static DateTimeFormatter createDateTimeFormatter(String pattern) {
+        return new DateTimeFormatterBuilder()
+                // 作用于后续追加的解析规则，允许数字字段使用较少位数
+                .parseLenient()
+                .appendPattern(pattern)
+                // yyyy 对应 YEAR_OF_ERA，严格模式下需要默认补充公元纪元
+                .parseDefaulting(ChronoField.ERA, IsoEra.CE.getValue())
+                // 仅有日期时默认为当天零点，分、秒和纳秒由解析器自动补零
+                .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
+                .toFormatter()
+                // 拒绝越界值和不存在的日期，如 "2020-2-30"
+                .withResolverStyle(ResolverStyle.STRICT);
+    }
 
     public static SimpleDateFormat getSimpleDateFormat(String pattern) {
-        SimpleDateFormat ret = TL.get().get(pattern);
+        HashMap<String, SimpleDateFormat> cache = simpleDateFormatCache.get();
+        SimpleDateFormat ret = cache.get(pattern);
         if (ret == null) {
             ret = new SimpleDateFormat(pattern);
-            TL.get().put(pattern, ret);
+            // 允许数字字段不补零，但拒绝越界值和不存在的日期
+            ret.setLenient(false);
+            cache.put(pattern, ret);
         }
         return ret;
     }
@@ -124,14 +148,15 @@ public class TimeUtil {
     }
 
     /**
-     * 按指定 pattern 将 String 转换成 Date
+     * 按指定 pattern 将整个 String 转换成 Date
      */
     public static Date parse(String dateString, String pattern) {
-        try {
-            return getSimpleDateFormat(pattern).parse(dateString);
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
+        ParsePosition position = new ParsePosition(0);
+        Date ret = getSimpleDateFormat(pattern).parse(dateString, position);
+        if (ret == null || position.getIndex() != dateString.length()) {
+            throw new IllegalArgumentException("Invalid date string \"" + dateString + "\" for pattern \"" + pattern + "\".");
         }
+        return ret;
     }
 
     /**
@@ -143,17 +168,52 @@ public class TimeUtil {
     }
 
     private static String detectDatePattern(String dateString) {
-        if (       dateString.length() > "yyyy-MM-dd HH:mm:ss".length()) {
-            return "yyyy-MM-dd HH:mm:ss.SSS";
-        } else if (dateString.length() > "yyyy-MM-dd HH:mm".length()) {
-            return "yyyy-MM-dd HH:mm:ss";
-        } else if (dateString.length() > "yyyy-MM-dd HH".length()) {
-            return "yyyy-MM-dd HH:mm";
-        } else if (dateString.length() > "yyyy-MM-dd".length()) {
-            return "yyyy-MM-dd HH";
-        } else {
+        int space = dateString.indexOf(' ');
+        if (space == -1) {
             return "yyyy-MM-dd";
         }
+        int firstColon = dateString.indexOf(':', space + 1);
+        if (firstColon == -1) {
+            return "yyyy-MM-dd HH";
+        }
+        int secondColon = dateString.indexOf(':', firstColon + 1);
+        if (secondColon == -1) {
+            return "yyyy-MM-dd HH:mm";
+        }
+        int dot = dateString.indexOf('.', secondColon + 1);
+        if (dot == -1) {
+            return "yyyy-MM-dd HH:mm:ss";
+        }
+        if (dateString.length() - dot - 1 != 3) {
+            throw new IllegalArgumentException("Millisecond precision must contain exactly 3 digits: \"" + dateString + "\"");
+        }
+        return "yyyy-MM-dd HH:mm:ss.SSS";
+    }
+
+    private static String detectTimePattern(String timeString) {
+        int firstColon = timeString.indexOf(':');
+        if (firstColon == -1) {
+            return "HH";
+        }
+        int secondColon = timeString.indexOf(':', firstColon + 1);
+        if (secondColon == -1) {
+            return "HH:mm";
+        }
+        int dot = timeString.indexOf('.', secondColon + 1);
+        if (dot == -1) {
+            return "HH:mm:ss";
+        }
+
+        int fractionLength = timeString.length() - dot - 1;
+        if (fractionLength < 1 || fractionLength > 9) {
+            throw new IllegalArgumentException("Fractional second precision must contain 1 to 9 digits: \"" + timeString + "\"");
+        }
+
+        StringBuilder pattern = new StringBuilder("HH:mm:ss.");
+        for (int i = 0; i < fractionLength; i++) {
+            pattern.append('S');
+        }
+        return pattern.toString();
     }
 
     /**
@@ -186,6 +246,14 @@ public class TimeUtil {
     }
 
     /**
+     * 自动探测 pattern 将 String 转换成 LocalTime，支持 1 至 9 位小数秒。
+     */
+    public static LocalTime parseLocalTime(String localTimeString) {
+        String pattern = detectTimePattern(localTimeString);
+        return parseLocalTime(localTimeString, pattern);
+    }
+
+    /**
      * 判断 A 的时间是否在 B 的时间 "之后"
      */
     public static boolean isAfter(ChronoLocalDateTime<?> self, ChronoLocalDateTime<?> other) {
@@ -210,9 +278,10 @@ public class TimeUtil {
      * java.util.Date --> java.time.LocalDateTime
      */
     public static LocalDateTime toLocalDateTime(Date date) {
-        // java.sql.Date 不支持 toInstant()，需要先转换成 java.util.Date
         if (date instanceof java.sql.Date) {
-            date = new Date(date.getTime());
+            return ((java.sql.Date) date).toLocalDate().atStartOfDay();
+        } else if (date instanceof java.sql.Time) {
+            throw new IllegalArgumentException("Cannot convert java.sql.Time to LocalDateTime without a date.");
         }
 
         Instant instant = date.toInstant();
@@ -224,9 +293,10 @@ public class TimeUtil {
      * java.util.Date --> java.time.LocalDate
      */
     public static LocalDate toLocalDate(Date date) {
-        // java.sql.Date 不支持 toInstant()，需要先转换成 java.util.Date
         if (date instanceof java.sql.Date) {
-            date = new Date(date.getTime());
+            return ((java.sql.Date) date).toLocalDate();
+        } else if (date instanceof java.sql.Time) {
+            throw new IllegalArgumentException("Cannot convert java.sql.Time to LocalDate without a date.");
         }
 
         Instant instant = date.toInstant();
@@ -239,9 +309,10 @@ public class TimeUtil {
      * java.util.Date --> java.time.LocalTime
      */
     public static LocalTime toLocalTime(Date date) {
-        // java.sql.Date 不支持 toInstant()，需要先转换成 java.util.Date
-        if (date instanceof java.sql.Date) {
-            date = new Date(date.getTime());
+        if (date instanceof java.sql.Time) {
+            return ((java.sql.Time) date).toLocalTime();
+        } else if (date instanceof java.sql.Date) {
+            throw new IllegalArgumentException("Cannot convert java.sql.Date to LocalTime without a time.");
         }
 
         Instant instant = date.toInstant();
@@ -269,18 +340,7 @@ public class TimeUtil {
     }
 
     /**
-     * java.time.LocalTime --> java.util.Date
-     */
-    public static Date toDate(LocalTime localTime) {
-        LocalDate localDate = LocalDate.now();
-        LocalDateTime localDateTime = LocalDateTime.of(localDate, localTime);
-        ZoneId zone = ZoneId.systemDefault();
-        Instant instant = localDateTime.atZone(zone).toInstant();
-        return Date.from(instant);
-    }
-
-    /**
-     * java.time.LocalTime --> java.util.Date
+     * java.time.LocalDate + java.time.LocalTime --> java.util.Date
      */
     public static Date toDate(LocalDate localDate, LocalTime localTime) {
         LocalDateTime localDateTime = LocalDateTime.of(localDate, localTime);
@@ -320,5 +380,3 @@ public class TimeUtil {
         return toLong(LocalDateTime.now(), type);
     }
 }
-
-

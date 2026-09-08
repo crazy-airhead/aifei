@@ -21,7 +21,10 @@ import cn.aifei.aop.Invocation;
 import cn.aifei.db.core.Db;
 
 /**
- * 基于 AOP 的事务拦截器。绝大多数情况推荐使用 Db.transaction(...) 支持事务。
+ * 基于 AOP 的事务拦截器。多数情况推荐使用 Db.transaction(...) 支持事务。
+ *
+ * 可配合 TransactionArgument 注入 Transaction 对象，便于在拦截器场景下
+ * 依然可以使用 Transaction 提供的实用功能
  *
  * <pre>
  *  注意：
@@ -42,21 +45,36 @@ import cn.aifei.db.core.Db;
  */
 public class Transactional implements Interceptor {
 
-    @Override
-    public void intercept(Invocation inv) throws Throwable {
-        Db.transaction(tx -> proceed(inv));
+    static final ThreadLocal<Transaction<?>> THREAD_LOCAL = new ThreadLocal<>();
+
+    /**
+     * 获取当前 Transactional 拦截器开启的事务。
+     *
+     * @return 当前事务，未处于 Transactional 拦截器中时返回 null
+     */
+    public static Transaction<?> getTransaction() {
+        return THREAD_LOCAL.get();
     }
 
-    private Object proceed(Invocation inv) throws Exception {
-        try {
-            inv.invoke();
-            // 若返回 RollbackDecision 实例，则需参与事务回滚
-            return inv.getReturnValue();
-        } catch (Exception e) {
-            throw e;
-        } catch (Throwable e) {
-            throw new Exception(e);
-        }
+    @Override
+    public void intercept(Invocation inv) throws Exception {
+        Object returnValue = Db.transaction(tx -> {
+            Transaction<?> previous = THREAD_LOCAL.get();
+            try {
+                THREAD_LOCAL.set(tx);
+                inv.invoke();
+                return inv.getReturnValue();    // 若返回 RollbackDecision 实例，则会参与事务回滚
+            } finally {
+                if (previous == null) {
+                    THREAD_LOCAL.remove();
+                } else {
+                    THREAD_LOCAL.set(previous);
+                }
+            }
+        });
+
+        // 用于注入 onException 回调返回值，其它流程已在 Invocation.invoke() 中赋值
+        inv.setReturnValue(returnValue);
     }
 }
 

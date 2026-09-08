@@ -25,34 +25,28 @@ import java.util.List;
 
 /**
  * IpUtil
- *
- * @author airhead
  */
 public class IpUtil {
 
-  public static List<String> getLocalIp() {
-    List<String> ipList = new ArrayList<>();
-    try {
-      for (Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
-          e.hasMoreElements(); ) {
-        NetworkInterface networkInterface = e.nextElement();
-        if (networkInterface.isLoopback()
-            || networkInterface.isVirtual()
-            || !networkInterface.isUp()) {
-          continue;
-        }
+    public static List<String> getLocalIp() {
+        List<String> ipList = new ArrayList<>();
+        try {
+            for (Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces(); e.hasMoreElements();) {
+                NetworkInterface networkInterface = e.nextElement();
+                if (networkInterface.isLoopback() || networkInterface.isVirtual() || !networkInterface.isUp()) {
+                    continue;
+                }
 
-        for (Enumeration<InetAddress> ele = networkInterface.getInetAddresses();
-            ele.hasMoreElements(); ) {
-          InetAddress ip = ele.nextElement();
-          if (ip instanceof Inet4Address) {
-            ipList.add(ip.getHostAddress());
-          }
+                for (Enumeration<InetAddress> ele = networkInterface.getInetAddresses(); ele.hasMoreElements();) {
+                    InetAddress ip = ele.nextElement();
+                    if (ip instanceof Inet4Address) {
+                        ipList.add(ip.getHostAddress());
+                    }
+                }
+            }
+            return ipList;
+        } catch (Exception e) {
+            return ipList;
         }
-      }
-      return ipList;
-    } catch (Exception e) {
-      return ipList;
     }
-  }
 }

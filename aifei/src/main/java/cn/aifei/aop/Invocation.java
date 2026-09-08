@@ -16,6 +16,7 @@
 
 package cn.aifei.aop;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import cn.aifei.argument.Argument;
 import cn.aifei.argument.ArgumentException;
@@ -68,11 +69,13 @@ public class Invocation {
     /**
      * 调用 action method。调用 action method 之前先调用拦截器。
      */
-    public void invoke() throws Throwable {
+    public void invoke() throws Exception {
         if (index < interceptors.length) {
             interceptors[index++].intercept(this);
+            return;
+        }
 
-        } else if (index++ == interceptors.length) {    // index++ ensure invoke action only one time
+        if (index++ == interceptors.length) {    // index++ ensure invoke action only one time
             if (action != null) {
                 // 拦截器调用之后获取 args，便于拦截器中处理并存入 Input 的数据能在 Argument.getValue(in, out) 中被使用
                 Argument<Input, Output, ?>[] arguments = action.getArguments();
@@ -90,8 +93,20 @@ public class Invocation {
                         throw new ArgumentException(arguments[i], e);
                     }
                 }
+
                 // Invoke the action
-                returnValue = method.invoke(target, args);
+                try {
+                    returnValue = method.invoke(target, args);
+                } catch (InvocationTargetException e) {
+                    Throwable targetException = e.getTargetException();
+                    if (targetException instanceof Exception) {
+                        throw (Exception) targetException;
+                    }
+                    if (targetException instanceof Error) {
+                        throw (Error) targetException;
+                    }
+                    throw new RuntimeException(targetException);
+                }
 
             } else {
                 // Invoke the callback
@@ -193,5 +208,3 @@ public class Invocation {
         return output;
     }
 }
-
-

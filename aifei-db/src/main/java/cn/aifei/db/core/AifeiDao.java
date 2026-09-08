@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Function;
 
@@ -744,11 +745,6 @@ public class AifeiDao<D extends AifeiDao<D, R>, R extends AifeiRow<R>> {
         return config.queryExecutor.queryDouble(this);
     }
 
-    // 几乎用不到，且输入时代码提示干扰常用方法 queryStr
-    // public Short queryShort() {
-    //     return config.queryExecutor.queryShort(this);
-    // }
-
     public Boolean queryBoolean() {
         return config.queryExecutor.queryBoolean(this);
     }
@@ -765,16 +761,16 @@ public class AifeiDao<D extends AifeiDao<D, R>, R extends AifeiRow<R>> {
         return config.queryExecutor.queryLocalDate(this);
     }
 
+    public LocalTime queryLocalTime() {
+        return config.queryExecutor.queryLocalTime(this);
+    }
+
     public java.sql.Timestamp queryTimestamp() {
         return config.queryExecutor.queryTimestamp(this);
     }
 
     public java.sql.Time queryTime() {
         return config.queryExecutor.queryTime(this);
-    }
-
-    public Byte queryByte() {
-        return config.queryExecutor.queryByte(this);
     }
 
     public byte[] queryBytes() {
@@ -851,5 +847,4 @@ public class AifeiDao<D extends AifeiDao<D, R>, R extends AifeiRow<R>> {
         return config.transactionExecutor.execute(config, isolation, atom);
     }
 }
-
 
