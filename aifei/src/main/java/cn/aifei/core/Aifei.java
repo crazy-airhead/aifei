@@ -34,8 +34,6 @@ import java.nio.file.Path;
  */
 public class Aifei {
 
-    static final String VERSION = "1.1.1";
-
     static Routes routes;
     static Plugins plugins;
     static Settings<?, ?> settings;
@@ -59,7 +57,7 @@ public class Aifei {
     }
 
     private static <I extends Input, O extends Output> void doStart(AifeiConfig<I, O> aifeiConfig, String[] args) {
-        System.out.println("\nStarting Aifei " + VERSION);
+        System.out.println("\nStarting Aifei " + Version.VERSION);
         long startTime = System.currentTimeMillis();
         commandLineArgumentToSystemProperty(args);
         Aifei.aifeiConfig = aifeiConfig;
@@ -158,7 +156,7 @@ public class Aifei {
         }
         started = false;
 
-        System.out.println("Stopping Aifei " + VERSION);
+        System.out.println("Stopping Aifei " + Version.VERSION);
         long startTime = System.currentTimeMillis();
 
         // 关闭 Server
@@ -255,7 +253,7 @@ public class Aifei {
      * 获取 Aifei 版本号
      */
     public static String getVersion() {
-        return VERSION;
+        return Version.VERSION;
     }
 
     /**

@@ -16,6 +16,8 @@
 
 package cn.aifei.server.undertow;
 
+import static cn.aifei.core.Version.VERSION;
+
 import java.util.List;
 import java.util.function.Consumer;
 import cn.aifei.server.Dispatcher;
@@ -47,7 +49,6 @@ import static cn.aifei.server.undertow.UndertowConfig.*;
  */
 public class UndertowServer implements Server<HttpServerExchange, Void> {
 
-    static final String version = "1.1.1";
     protected Builder builder;
     protected Undertow undertow;
     protected UndertowConfig config;
@@ -124,7 +125,7 @@ public class UndertowServer implements Server<HttpServerExchange, Void> {
 
         try {
             // System.out.println("Starting Undertow Server on port: " + config.getPort());
-            System.out.println("INFO: aifei-undertow " + version + ", undertow " + Version.getVersionString() + ", JVM " + System.getProperty("java.version"));
+            System.out.println("INFO: aifei-undertow " + VERSION + ", undertow " + Version.getVersionString() + ", JVM " + System.getProperty("java.version"));
             doStart();
             if (config.isPrintServerUrls()) {
                 printServerUrls();

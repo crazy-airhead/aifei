@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.crazy-airhead</groupId>
         <artifactId>aifei-parent</artifactId>
-        <version>1.1.1</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>aifei</artifactId>
@@ -37,6 +37,24 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+            <!-- 构建时把 java-templates 下的模板过滤后生成 cn.aifei.core.Version 版本常量类。
+                 输出直接写到 src/main/java 覆盖随仓库提交的默认文件：
+                 保证未构建前 IDE 不报红，升级 revision 后随 pom 一起提交更新 -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>templating-maven-plugin</artifactId>
+                <configuration>
+                    <outputDirectory>${basedir}/src/main/java</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-version-class</id>
+                        <goals>
+                            <goal>filter-sources</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
