@@ -6,7 +6,7 @@
 
     <groupId>io.github.crazy-airhead</groupId>
     <artifactId>aifei-parent</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <packaging>pom</packaging>
 
     <name>aifei-parent</name>
@@ -72,15 +72,15 @@
         <central-publishing-maven-plugin.version>0.10.0</central-publishing-maven-plugin.version>
 
         <slf4j.version>2.0.18</slf4j.version>
-        <log4j.version>2.26.0</log4j.version>
-        <fastjson2.version>2.0.63</fastjson2.version>
+        <log4j.version>2.26.1</log4j.version>
+        <fastjson2.version>2.0.64</fastjson2.version>
         <druid.version>1.2.28</druid.version>
         <hikaricp.version>4.0.3</hikaricp.version>
         <javassist.version>3.33.0-GA</javassist.version>
         <undertow-core.version>2.2.40.Final</undertow-core.version>
         <feat-core.version>2.4.1</feat-core.version>
-        <junit.version>4.13.2</junit.version>
         <snack4.version>4.0.59</snack4.version>
+        <junit.version>4.13.2</junit.version>
     </properties>
 
     <dependencyManagement>

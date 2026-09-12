@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
+@RunWith(Parameterized.class)
 public class ProxyExceptionTest {
 
     static final CheckedFailure CHECKED_FAILURE = new CheckedFailure();
@@ -36,6 +37,19 @@ public class ProxyExceptionTest {
             new InvocationTargetException(new IllegalStateException());
 
     private final ProxyFactory factory = new JavassistProxyFactory();
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> proxyFactories() {
+        return Arrays.asList(new Object[][] {
+                {"cglib", new CglibProxyFactory()},
+                {"javassist", new JavassistProxyFactory()}
+        });
+    }
+
+    private final ProxyFactory factory;
+
+    public ProxyExceptionTest(String name, ProxyFactory factory) {
+        this.factory = factory;
+    }
 
     @Test
     public void exceptionsKeepTheSameContractWithAndWithoutInterceptors() {
