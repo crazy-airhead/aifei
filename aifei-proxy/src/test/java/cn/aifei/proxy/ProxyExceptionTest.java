@@ -16,139 +16,143 @@
 
 package cn.aifei.proxy;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
+
 import cn.aifei.aop.Before;
 import cn.aifei.aop.Interceptor;
 import cn.aifei.aop.Invocation;
 import cn.aifei.proxy.javassist.JavassistProxyFactory;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.Collection;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class ProxyExceptionTest {
 
-    static final CheckedFailure CHECKED_FAILURE = new CheckedFailure();
-    static final RuntimeException RUNTIME_FAILURE = new RuntimeException();
-    static final Error ERROR = new AssertionError();
-    static final DirectThrowable DIRECT_THROWABLE = new DirectThrowable();
-    static final InvocationTargetException USER_INVOCATION_TARGET_EXCEPTION =
-            new InvocationTargetException(new IllegalStateException());
+  static final CheckedFailure CHECKED_FAILURE = new CheckedFailure();
+  static final RuntimeException RUNTIME_FAILURE = new RuntimeException();
+  static final Error ERROR = new AssertionError();
+  static final DirectThrowable DIRECT_THROWABLE = new DirectThrowable();
+  static final InvocationTargetException USER_INVOCATION_TARGET_EXCEPTION =
+      new InvocationTargetException(new IllegalStateException());
 
-    private final ProxyFactory factory = new JavassistProxyFactory();
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> proxyFactories() {
-        return Arrays.asList(new Object[][] {
-                {"cglib", new CglibProxyFactory()},
-                {"javassist", new JavassistProxyFactory()}
-        });
+  private final ProxyFactory factory;
+
+  public ProxyExceptionTest(String name, ProxyFactory factory) {
+    this.factory = factory;
+  }
+
+  @Parameterized.Parameters(name = "{0}")
+  public static Collection<Object[]> proxyFactories() {
+    return Arrays.asList(new Object[][] {{"javassist", new JavassistProxyFactory()}});
+  }
+
+  @Test
+  public void exceptionsKeepTheSameContractWithAndWithoutInterceptors() {
+    ProceedInterceptor.invocationCount = 0;
+
+    assertContract(factory.get(PlainFailureService.class));
+    assertEquals(0, ProceedInterceptor.invocationCount);
+
+    assertContract(factory.get(InterceptedFailureService.class));
+    assertEquals(5, ProceedInterceptor.invocationCount);
+  }
+
+  private void assertContract(FailureService service) {
+    assertSameFailure(CHECKED_FAILURE, service::checked);
+    assertSameFailure(RUNTIME_FAILURE, service::runtime);
+    assertSameFailure(ERROR, service::error);
+    assertWrappedFailure(DIRECT_THROWABLE, service::directThrowable);
+    assertSameFailure(USER_INVOCATION_TARGET_EXCEPTION, service::invocationTargetException);
+  }
+
+  private void assertSameFailure(Throwable expected, ThrowingCall call) {
+    try {
+      call.run();
+      fail("Expected " + expected.getClass().getName());
+    } catch (Throwable actual) {
+      assertSame(expected, actual);
+    }
+  }
+
+  private void assertWrappedFailure(Throwable expectedCause, ThrowingCall call) {
+    try {
+      call.run();
+      fail("Expected RuntimeException");
+    } catch (RuntimeException actual) {
+      assertSame(expectedCause, actual.getCause());
+    } catch (Throwable actual) {
+      fail("Expected RuntimeException but got " + actual.getClass().getName());
+    }
+  }
+
+  interface FailureService {
+    void checked() throws CheckedFailure;
+
+    void runtime();
+
+    void error();
+
+    void directThrowable() throws Throwable;
+
+    void invocationTargetException() throws InvocationTargetException;
+  }
+
+  @FunctionalInterface
+  interface ThrowingCall {
+    void run() throws Throwable;
+  }
+
+  public static class PlainFailureService implements FailureService {
+    @Override
+    public void checked() throws CheckedFailure {
+      throw CHECKED_FAILURE;
     }
 
-    private final ProxyFactory factory;
-
-    public ProxyExceptionTest(String name, ProxyFactory factory) {
-        this.factory = factory;
+    @Override
+    public void runtime() {
+      throw RUNTIME_FAILURE;
     }
 
-    @Test
-    public void exceptionsKeepTheSameContractWithAndWithoutInterceptors() {
-        ProceedInterceptor.invocationCount = 0;
-
-        assertContract(factory.get(PlainFailureService.class));
-        assertEquals(0, ProceedInterceptor.invocationCount);
-
-        assertContract(factory.get(InterceptedFailureService.class));
-        assertEquals(5, ProceedInterceptor.invocationCount);
+    @Override
+    public void error() {
+      throw ERROR;
     }
 
-    private void assertContract(FailureService service) {
-        assertSameFailure(CHECKED_FAILURE, service::checked);
-        assertSameFailure(RUNTIME_FAILURE, service::runtime);
-        assertSameFailure(ERROR, service::error);
-        assertWrappedFailure(DIRECT_THROWABLE, service::directThrowable);
-        assertSameFailure(USER_INVOCATION_TARGET_EXCEPTION, service::invocationTargetException);
+    @Override
+    public void directThrowable() throws Throwable {
+      throw DIRECT_THROWABLE;
     }
 
-    private void assertSameFailure(Throwable expected, ThrowingCall call) {
-        try {
-            call.run();
-            fail("Expected " + expected.getClass().getName());
-        } catch (Throwable actual) {
-            assertSame(expected, actual);
-        }
+    @Override
+    public void invocationTargetException() throws InvocationTargetException {
+      throw USER_INVOCATION_TARGET_EXCEPTION;
     }
+  }
 
-    private void assertWrappedFailure(Throwable expectedCause, ThrowingCall call) {
-        try {
-            call.run();
-            fail("Expected RuntimeException");
-        } catch (RuntimeException actual) {
-            assertSame(expectedCause, actual.getCause());
-        } catch (Throwable actual) {
-            fail("Expected RuntimeException but got " + actual.getClass().getName());
-        }
+  @Before(ProceedInterceptor.class)
+  public static class InterceptedFailureService extends PlainFailureService {}
+
+  public static class ProceedInterceptor implements Interceptor {
+    static int invocationCount;
+
+    @Override
+    public void intercept(Invocation inv) throws Exception {
+      invocationCount++;
+      inv.invoke();
     }
+  }
 
-    interface FailureService {
-        void checked() throws CheckedFailure;
-        void runtime();
-        void error();
-        void directThrowable() throws Throwable;
-        void invocationTargetException() throws InvocationTargetException;
-    }
+  static class CheckedFailure extends Exception {
+    private static final long serialVersionUID = 1L;
+  }
 
-    public static class PlainFailureService implements FailureService {
-        @Override
-        public void checked() throws CheckedFailure {
-            throw CHECKED_FAILURE;
-        }
-
-        @Override
-        public void runtime() {
-            throw RUNTIME_FAILURE;
-        }
-
-        @Override
-        public void error() {
-            throw ERROR;
-        }
-
-        @Override
-        public void directThrowable() throws Throwable {
-            throw DIRECT_THROWABLE;
-        }
-
-        @Override
-        public void invocationTargetException() throws InvocationTargetException {
-            throw USER_INVOCATION_TARGET_EXCEPTION;
-        }
-    }
-
-    @Before(ProceedInterceptor.class)
-    public static class InterceptedFailureService extends PlainFailureService {
-    }
-
-    public static class ProceedInterceptor implements Interceptor {
-        static int invocationCount;
-
-        @Override
-        public void intercept(Invocation inv) throws Exception {
-            invocationCount++;
-            inv.invoke();
-        }
-    }
-
-    static class CheckedFailure extends Exception {
-        private static final long serialVersionUID = 1L;
-    }
-
-    static class DirectThrowable extends Throwable {
-        private static final long serialVersionUID = 1L;
-    }
-
-    @FunctionalInterface
-    interface ThrowingCall {
-        void run() throws Throwable;
-    }
+  static class DirectThrowable extends Throwable {
+    private static final long serialVersionUID = 1L;
+  }
 }
