@@ -79,7 +79,10 @@ state_of() {   # $1=deploymentId → 仅输出 deploymentState
 }
 
 wait_state() { # $1=id  $2=目标状态  $3=超时分钟
-    local id=$1 target=$2 timeout_min=$3 n=0 max=$((timeout_min * 4))
+    # 注意：同一条 local 里先用后赋会触发 set -u 的 unbound variable，
+    # 拆成两条声明，保证 max 展开时 timeout_min 已赋值
+    local id=$1 target=$2 timeout_min=$3 n=0
+    local max=$((timeout_min * 4))
     while :; do
         local state; state=$(state_of "$id") || state=""
         [ "$state" = "$target" ] && return 0
