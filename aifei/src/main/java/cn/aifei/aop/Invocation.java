@@ -98,14 +98,15 @@ public class Invocation {
                 try {
                     returnValue = method.invoke(target, args);
                 } catch (InvocationTargetException e) {
-                    Throwable targetException = e.getTargetException();
-                    if (targetException instanceof Exception) {
-                        throw (Exception) targetException;
+                    // 只拆除当前反射调用的一层包装，Exception 和 Error 原样传播给拦截器与事务。
+                    Throwable cause = e.getCause();
+                    if (cause instanceof Exception) {
+                        throw (Exception) cause;
                     }
-                    if (targetException instanceof Error) {
-                        throw (Error) targetException;
+                    if (cause instanceof Error) {
+                        throw (Error) cause;
                     }
-                    throw new RuntimeException(targetException);
+                    throw new RuntimeException(cause);
                 }
 
             } else {

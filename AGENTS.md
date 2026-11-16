@@ -8,7 +8,7 @@ This is a Java 8 multi-module Maven project rooted at `pom.xml`. Modules are:
 - `aifei-log`, `aifei-json`, `aifei-proxy`, `aifei-db`, `aifei-enjoy`, `aifei-undertow`: focused feature modules.
 - `aifei-all`: shaded all-in-one distribution; avoid primary source here unless packaging requires it.
 
-Production code lives under each module's `src/main/java`, with packages under `cn.aifei`. Resources use `src/main/resources`; `.af` templates under `src/main/java` are also included by the parent build. No test tree is present yet; add tests under the relevant module's `src/test/java`.
+Production code lives under each module's `src/main/java`, with packages under `cn.aifei`. Resources use `src/main/resources`; `.af` templates under `src/main/java` are also included by the parent build. Tests live under each module's `src/test/java`, with fixtures under `src/test/resources`.
 
 ## Build, Test, and Development Commands
 
@@ -16,7 +16,8 @@ Production code lives under each module's `src/main/java`, with packages under `
 - `mvn -pl aifei-db test`: runs tests for one module.
 - `mvn -pl aifei-db -am test`: also builds required upstream modules.
 - `mvn -pl aifei-all package`: creates the shaded all-in-one artifact.
-- `mvn -Pcentral-release verify`: performs signed release verification and Central validation.
+- `mvn -Pcentral-release verify`: builds and tests all modules and signs release artifacts locally.
+- `mvn -Pcentral-release deploy`: uploads signed release artifacts to the Central Portal and waits for validation; with `autoPublish=false`, publishing requires manual confirmation in the Portal.
 
 ## Coding Style & Naming Conventions
 

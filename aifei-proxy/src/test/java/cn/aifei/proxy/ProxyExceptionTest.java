@@ -27,6 +27,7 @@ import cn.aifei.proxy.javassist.JavassistProxyFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,14 +43,32 @@ public class ProxyExceptionTest {
       new InvocationTargetException(new IllegalStateException());
 
   private final ProxyFactory factory;
+  private final boolean jit;
+  private boolean previousJit;
 
-  public ProxyExceptionTest(String name, ProxyFactory factory) {
+  public ProxyExceptionTest(String name, ProxyFactory factory, boolean jit) {
     this.factory = factory;
+    this.jit = jit;
   }
 
-  @Parameterized.Parameters(name = "{0}")
+  @Parameterized.Parameters(name = "{0}, jit={2}")
   public static Collection<Object[]> proxyFactories() {
-    return Arrays.asList(new Object[][] {{"javassist", new JavassistProxyFactory()}});
+    return Arrays.asList(
+        new Object[][] {
+          {"javassist", new JavassistProxyFactory(), true},
+          {"javassist", new JavassistProxyFactory(), false}
+        });
+  }
+
+  @org.junit.Before
+  public void configureCreationMode() {
+    previousJit = InstanceFactory.jit;
+    InstanceFactory.setJit(jit);
+  }
+
+  @After
+  public void restoreCreationMode() {
+    InstanceFactory.setJit(previousJit);
   }
 
   @Test

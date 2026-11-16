@@ -1,5 +1,7 @@
 # Aifei
 
+**简体中文** | [English](README.en.md)
+
 世界首个 AI Coding 框架。
 
 官网: https://aifei.cn
@@ -83,6 +85,10 @@ public class VipService {
     }
 }
 ```
+
+由 `InstanceFactory` 创建的 Service 必须具有工厂可访问的 `public` 无参构造器，工厂不会扩大访问权限。上例未声明构造器，Java 会为该 `public` 类提供默认的 `public` 无参构造器；如果声明了有参构造器，需要显式保留 `public` 无参构造器。
+
+工厂默认优先使用 Lambda 创建对象，也可在启动时调用 `InstanceFactory.setJit(false)` 选择普通反射。该设置对 `InstanceFactory` 全局生效，不影响 JVM 的 JIT 编译。
 
 ### 配置
 
@@ -471,12 +477,26 @@ Just Service 将代码结构压缩至最小，使大模型在生成代码时可�
 
 当下需要体验的同学，可以让大模型参考样例代码直接生成业务逻辑。Just Service 之下，已可获得稳定且高质量的生成结果。
 
+## 构建与测试
+
+使用完整 JDK（包含 `javac`）和 Maven，在项目根目录构建并运行全部测试：
+
+```bash
+mvn clean install
+```
+
+仅验证对象创建与代理相关模块：
+
+```bash
+mvn -pl aifei,aifei-enjoy,aifei-proxy -am clean test
+```
+
+验证 JDK 8、17、21、25 兼容性时，分别将 `JAVA_HOME` 指向对应 JDK 后运行上述测试命令。测试覆盖 Lambda 与反射两种模式、构造器访问限制、异常传播、类加载器隔离，以及代理行为。JPMS 测试在 JDK 8 上跳过，在 JDK 9 及以上版本检查模块导出与读取关系。
+
 ## 更多内容
 
 为尽早发布，当前文档优先覆盖核心理念与快速上手。HIO、AI Coding 实践、完整工程示例等内容将在后续持续补充。
 
 如需提前体验更完整的企业级实现，可订阅官方唯一 VIP 会员：[Aifei VIP 订阅](https://aifei.cn)
-
-
 
 

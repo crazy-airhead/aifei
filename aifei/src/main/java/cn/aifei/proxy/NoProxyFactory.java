@@ -29,17 +29,3 @@ public class NoProxyFactory implements ProxyFactory {
     }
 }
 
-
-// public class NoProxyFactory implements ProxyFactory {
-//     @Override
-//     public <T> T get(Class<T> target) {
-//         try {
-//             return target.getDeclaredConstructor().newInstance();
-//             // throw new RuntimeException("Configure ProxyFactory first before using Proxy");
-//         } catch (ReflectiveOperationException e) {
-//             throw new RuntimeException(e);
-//         }
-//     }
-// }
-
-

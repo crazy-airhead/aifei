@@ -20,47 +20,48 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Page 封装分页查询结果
+ * Page 封装分页查询结果。
+ * setter 方法主要用于反序列化，仅还原对应字段，不联动更新其他字段。
  */
 public class Page<T> implements Serializable {
+
+    private List<T> rows;       // 语义对齐 totalRows
 
     private int pageNum;
     private int pageSize;
 
     private long totalRows;
-    private int totalPages;
-
-    private List<T> rows;   // 语义对齐 totalRows
+    private long totalPages;    // 使用 long 类型，总页数可以大过 Integer.MAX_VALUE
 
     public Page() {
     }
 
     /**
      * Constructor.
+     * @param rows the rows of paginate result
      * @param pageNum the page number
      * @param pageSize the page size
      * @param totalRows the total rows of paginate
      * @param totalPages the total pages of paginate
-     * @param rows the rows of paginate result
      */
-    public Page(int pageNum, int pageSize, long totalRows, int totalPages, List<T> rows) {
+    public Page(List<T> rows, int pageNum, int pageSize, long totalRows, long totalPages) {
+        this.rows = rows;
         this.pageNum = pageNum;
         this.pageSize = pageSize;
         this.totalRows = totalRows;
         this.totalPages = totalPages;
-        this.rows = rows;
     }
 
     /**
      * Constructor.
+     * @param rows the rows of paginate result
      * @param pageNum the page number
      * @param pageSize the page size
      * @param totalRows the total rows of paginate
-     * @param rows the rows of paginate result
      */
-    public Page(int pageNum, int pageSize, long totalRows, List<T> rows) {
+    public Page(List<T> rows, int pageNum, int pageSize, long totalRows) {
         // 取模 % 和除法 / 是整数运算，性能优于浮点运算的 Math.ceil
-        this(pageNum, pageSize, totalRows, (int) (totalRows % pageSize != 0 ? totalRows / pageSize + 1 : totalRows / pageSize), rows);
+        this(rows, pageNum, pageSize, totalRows, totalRows % pageSize != 0 ? totalRows / pageSize + 1 : totalRows / pageSize);
     }
 
     /**
@@ -110,28 +111,20 @@ public class Page<T> implements Serializable {
     /**
      * Return total pages.
      */
-    public int getTotalPages() {
+    public long getTotalPages() {
         return totalPages;
     }
 
-    public void setTotalPages(int totalPages) {
+    public void setTotalPages(long totalPages) {
         this.totalPages = totalPages;
     }
 
-    public boolean isFirstPage() {
+    public boolean firstPage() {
         return pageNum == 1;
     }
 
-    public boolean isLastPage() {
+    public boolean lastPage() {
         return pageNum >= totalPages;
-    }
-
-    public boolean hasPreviousPage() {
-        return pageNum > 1;
-    }
-
-    public boolean hasNextPage() {
-        return pageNum < totalPages;
     }
 
     @Override
