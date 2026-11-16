@@ -22,7 +22,7 @@ package cn.aifei.core;
  */
 public final class Version {
 
-    public static final String VERSION = "1.1.1";
+    public static final String VERSION = "1.1.2";
 
     private Version() {}
 }

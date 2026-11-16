@@ -57,7 +57,7 @@
 
     <properties>
         <!-- 项目版本号唯一声明处：升级版本只改这一行 -->
-        <revision>1.1.1</revision>
+        <revision>1.1.2</revision>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
